@@ -1,0 +1,324 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <link href='https://fonts.googleapis.com/css?family=Noto Sans' rel='stylesheet'>
+    <link href='https://fonts.googleapis.com/css?family=Indie Flower' rel='stylesheet'>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="google-site-verification" content="oHHztJYS-d7DAEJ4M2uhkBfBubZk17ox_Xivw4DBQ6I" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <meta property="og:site_name" content="MV-Forcing" />
+    <meta property="og:type" content="video.other" />
+    <meta property="og:title" content="MV-Forcing: Long Multi-View Video Generation via 4D-Grounded Spatio-Temporal Self-Forcing" />
+    <meta property="og:description" content="" />
+    <meta property="og:url" content="https://galfiebelman.github.io/mv-forcing/" />
+    <meta property="og:image" content="" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "MV-Forcing",
+      "url": "https://galfiebelman.github.io/mv-forcing/"
+    }
+    </script>
+    <meta property="article:publisher" content="https://galfiebelman.github.io/mv-forcing/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MV-Forcing: Long Multi-View Video Generation via 4D-Grounded Spatio-Temporal Self-Forcing" />
+    <meta name="twitter:description" content="" />
+    <meta name="twitter:url" content="https://galfiebelman.github.io/mv-forcing/" />
+    <meta name="twitter:image" content="https://galfiebelman.github.io/mv-forcing/webpage_assets/thumbnail.png" />
+
+    <title>MV-Forcing: Long Multi-View Video Generation via 4D-Grounded Spatio-Temporal Self-Forcing</title>
+<!--    <link rel="icon" href="../pics/wis_logo.jpg">-->
+    <link rel="icon" href="./webpage_assets/thumbnail.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css">
+    <link href='https://fonts.googleapis.com/css?family=Lora:400,400i' rel='stylesheet'>
+    <link href="style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+<div class="page-container">
+    <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+
+    <!-- title -->
+    <h1 class="ourh1" align="center">MV-Forcing</h1>
+    <h2 class="ourh2" align="center">Long Multi-View Video Generation via 4D-Grounded</h2>
+    <h3 class="ourh3" align="center">Spatio-Temporal Self-Forcing</h3>
+	
+    <!-- authors and affiliations -->
+    <section class="authors_block">
+        <div class="authors" align="center">
+            <span class="author-block"><a href="https://galfiebelman.github.io/" target="_blank">Gal Fiebelman</a><sup>1</sup>,</span>
+            <span class="author-block"><a href="https://www.elor.sites.tau.ac.il/" target="_blank">Hadar Averbuch-Elor</a><sup>2</sup>,</span>
+            <span class="author-block"><a href="https://sagiebenaim.github.io/" target="_blank">Sagie Benaim</a><sup>1</sup></span>
+        </div>
+
+        <div class="affiliations" align="center">
+            <span class="author-block2"><sup>1</sup>The Hebrew University of Jerusalem, </span>
+            <span class="author-block2"><sup>2</sup>Cornell University</span>
+        </div>
+    </section>
+	<!-- authors and affiliations -->
+    <!-- link buttons -->
+    <div class="column has-text-centered">
+        <div class="publication-links" align="center">
+
+          <!-- arxiv link -->
+          <span class="link-block">
+            <a href="" class="paper-link" style="display: inline-block">
+                <button class="button">
+                    <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                    </span>
+                    <span>arXiv</span>
+                  </button>
+            </a>
+          </span>
+
+          <!-- Github Link. -->
+          <span class="link-block">
+            <a href="" style="display: inline-block">
+                <button class="button">
+                    <span class="icon">
+                        <i class="fa fa-github"></i>
+                    </span>
+                    <span>Code (Coming Soon)</span>
+                  </button>
+            </a>
+          </span>
+          <!-- Supp Link. -->
+          <span class="link-block">
+            <a href="supp/index.html" style="display: inline-block">
+                <button class="button">
+                    <span class="icon">
+                        <i class="fa fa-plus-square"></i>
+                    </span>
+                    <span>Supplementary Material</span>
+                  </button>
+            </a>
+          </span>
+        </div>
+    </div>
+
+     
+    <!-- hero demo video -->
+    <div style="display: flex; justify-content: center; margin: 15px auto; max-width: 900px;">
+        <video video autoplay loop muted playsinline controls style="width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <source src="webpage_assets/demo.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <section class="tldr-section" width="100%">
+        <div class="intro-container has-text-justified">
+            <div class="intro-paragraph">
+                <p>
+                    <br>
+                    <span class="intro-paragraph_bold">TL;DR We present the first framework for long multi-view video generation by composing 
+                      temporal and view-wise autoregression with a 4D geometric prior.</span><br><br>
+                </p>
+            </div>
+        </div>
+    </section> 
+
+    <!-- abstract -->
+    <section class="abstract-section" width="100%">
+        <div class="abstract-container has-text-justified">
+            <hr>
+            <h2 align="center">Abstract</h2><br>
+            <p class="has-text-justified">
+                Recent advances in video diffusion models have enabled either long single-view generation through temporal autoregression, 
+                or short multi-view synthesis through bidirectional attention. However, generating long, multi-view consistent videos of 
+                dynamic scenes remains unsolved. In this work, we present MV-Forcing, a framework that composes temporal and view-wise autoregression 
+                within a single diffusion model by introducing a 4D geometric bridge between sequentially generated views. Our key insight is that 
+                an autoregressive 3D reconstruction model naturally interfaces between autoregressively generated views. Given a completed source view, 
+                we reconstruct its 3D structure and render a geometric prior of the next target viewpoint, which the diffusion model refines 
+                into a photorealistic video. To extend generation beyond the teacher's fixed temporal window, we introduce a joint denoising regime 
+                where both view slots are initialized from noise during training, enabling temporally unbounded generation. We distill the model via 
+                Distribution Matching Distillation with Spatio-Temporal Self-Forcing, closing the train-inference exposure bias gap for both temporal 
+                and view-sequential autoregression. Extensive experiments demonstrate that MV-Forcing produces geometrically consistent multi-view videos 
+                of dynamic scenes at arbitrary lengths and viewpoint counts using a single few-step student model.
+            </p>
+    </section>
+
+<!-- Results -->
+    <section class="results-section" width="100%">
+        <div class="abstract-container">
+            <hr>
+            <h2 align="center">Examples of Long Multi-View Video Generation</h2>
+            <br>
+            <p class="has-text-justified">
+                Each video shows 3 synchronized views generated autoregressively from a single text prompt.
+                Our framework generates temporally coherent video across multiple viewpoints and extended 
+                temporal horizons, and generalizes to <span class="rw-highlight">real-world</span> data with minimal finetuning.
+            </p>
+            <br>
+            <div class="swiper results-swiper">
+                <div class="swiper-wrapper">
+
+                    <!-- Page 1 -->
+                    <div class="swiper-slide">
+                        <div class="results-grid">
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/0.mp4" type="video/mp4"></video>
+                                <p class="result-caption">"A person wearing a white shirt and black pants, performing stretching exercises in a dimly lit room with wooden floors."</p>
+                            </div>
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/1.mp4" type="video/mp4"></video>
+                                <p class="result-caption rw-caption">"A curly-haired boy and a girl with long hair playing a video game in a colorful indoor arcade."</p>
+                            </div>
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/2.mp4" type="video/mp4"></video>
+                                <p class="result-caption">"A woman in black performing yoga poses in front of a modern building with large windows and trees casting shadows."</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Page 2 -->
+                    <div class="swiper-slide">
+                        <div class="results-grid">
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/3.mp4" type="video/mp4"></video>
+                                <p class="result-caption rw-caption">"A woman in a red sweater sitting on the floor holding a present by a fireplace and Christmas tree."</p>
+                            </div>
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/4.mp4" type="video/mp4"></video>
+                                <p class="result-caption">"A man in a black t-shirt, blue shorts and wearing sneakers is moving his arms and legs in various directions in front of a modern building."</p>
+                            </div>
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/5.mp4" type="video/mp4"></video>
+                                <p class="result-caption rw-caption">"A couple sitting on a blanket on a sandy beach, gesturing towards the ocean at sunset."</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Page 3 -->
+                    <div class="swiper-slide">
+                        <div class="results-grid">
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/6.mp4" type="video/mp4"></video>
+                                <p class="result-caption">"A woman performing dancing in an urban setting with industrial structures in the background."</p>
+                            </div>
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/7.mp4" type="video/mp4"></video>
+                                <p class="result-caption rw-caption">"A colorful globe spinning against a black background."</p>
+                            </div>
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/8.mp4" type="video/mp4"></video>
+                                <p class="result-caption">"A man in a t-shirt is dancing in a room with large windows and filled with large plants."</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Page 4 -->
+                    <div class="swiper-slide">
+                        <div class="results-grid">
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/9.mp4" type="video/mp4"></video>
+                                <p class="result-caption rw-caption">"A pedestrian crossing signal on a city street pole with buildings and trees in the background."</p>
+                            </div>
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/10.mp4" type="video/mp4"></video>
+                                <p class="result-caption">"A man in a black shirt stretching his arms and legs in a modern room with large windows."</p>
+                            </div>
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/11.mp4" type="video/mp4"></video>
+                                <p class="result-caption rw-caption">"A person wearing a protective mask picking up a small object."</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Page 5 -->
+                    <div class="swiper-slide">
+                        <div class="results-grid">
+                                <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/13.mp4" type="video/mp4"></video>
+                                <p class="result-caption rw-caption">"A close-up of a burning fire with intense orange and yellow flames flickering against a dark background."</p>
+                            </div>
+
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/12.mp4" type="video/mp4"></video>
+                                <p class="result-caption">"A man in a black t-shirt performing a series of dance moves near a large brick wall and metal staircase."</p>
+                            </div>
+                            <div class="result-item">
+                                <video autoplay loop muted playsinline controls><source src="./webpage_assets/results/14.mp4" type="video/mp4"></video>
+                                <p class="result-caption rw-caption">"A woman with dark hair and makeup turning her head in a dramatic black and white close-up portrait."</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="swiper-button-prev"></div>
+                <div class="swiper-button-next"></div>
+                <div class="swiper-pagination"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- method -->
+    <section class="method-section" width="100%">
+        <div class="abstract-container">
+            <hr>
+            <h2 align="center">How does it work?</h2>
+		        <br>
+            <div class="im_container has-text-justified" width="90%" align="center">
+                <img align="center" src="./webpage_assets/overview.png" alt="Overview" width="100%">
+            </div> 
+            <p class="has-text-justified">
+                <br>
+                🎥 We compose temporal and view-sequential autoregression within a single diffusion model, 
+                generating video blocks sequentially along both time and viewpoints using a causal few-step student 
+                distilled from a bidirectional teacher.<br></br>
+                🌍 Each generated block is fed into CUT3R, a recurrent 3D reconstruction model that accumulates 
+                a persistent geometric state encoding the 4D structure of the scene from all previously generated 
+                content across both axes.<br></br>
+                🔍 When generating the next view, the accumulated state is queried from the target camera 
+                to produce a geometric prior that grounds the generation in the full scene geometry observed so far.<br></br>
+                📋 See our paper for details on how Spatio-Temporal Self-Forcing closes the train-inference 
+                exposure bias gap along both axes, enabling generation at arbitrary length and viewpoint count.
+
+            </p>
+        <div class="attn-grid-vid-container">
+    </section>
+
+  <p><br>
+  </p>
+  <p>&nbsp;</p>
+  <p>&nbsp;</p>
+  <p>&nbsp;</p>
+
+</div>
+
+<script>
+const resultsSwiper = new Swiper('.results-swiper', {
+    speed: 400,
+    loop: true,
+    spaceBetween: 30,
+    pagination: {
+        el: '.results-swiper .swiper-pagination',
+        clickable: true,
+    },
+    navigation: {
+        nextEl: '.results-swiper .swiper-button-next',
+        prevEl: '.results-swiper .swiper-button-prev',
+    },
+    on: {
+        slideChangeTransitionStart: function () {
+            const activeSlide = this.slides[this.activeIndex];
+            const videos = activeSlide.querySelectorAll('video');
+            videos.forEach(v => {
+                v.currentTime = 0;
+                v.play();
+            });
+        }
+    }
+
+});
+</script>
+
+</body></html>
