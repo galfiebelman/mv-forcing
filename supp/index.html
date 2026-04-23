@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <link href='https://fonts.googleapis.com/css?family=Noto+Sans' rel='stylesheet'>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>MV-Forcing — Supplementary Material</title>
+    <link href="style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <h1 align="center">MV-Forcing: Long Multi-View Video Generation via<br>4D-Grounded Spatio-Temporal Self-Forcing</h1>
+    <h2 align="center">Supplementary Material</h2>
+
+    <p align="center">&nbsp;</p>
+    <h5 align="left">
+        Please click on the sections below to view our interactive results, comparisons, and ablations:
+    </h5>
+    <ul>
+        <li><a href="index.html">Our Results</a></li>
+        <li><a href="sections/real_world.html">Real-World Results</a></li>
+        <li><a href="sections/comparisons_short.html">Short Sequence Comparisons</a></li>
+        <li><a href="sections/comp_long.html">Long Sequence Comparisons</a></li>
+        <li><a href="sections/ablations.html">Component Ablations</a></li>
+        <li><a href="sections/ablations_views.html">View Scaling Ablations</a></li>
+        <li><a href="sections/temp.html">Temporal Scaling Ablations</a></li>
+    </ul>
+
+    <!------------------ BEGIN SECTION ------------------>
+    <p>&nbsp;</p>
+    <hr>
+
+    <h2 align="left">Our Results</h2>
+
+    <p align="left">
+        We show multi-view video generation results from MV-Forcing across diverse scenes and camera trajectories.
+        Each scene shows multiple synchronized views generated autoregressively from a single text prompt.
+        Hover over any video to play.
+    </p>
+    <br>
+
+    <p class="prompt-text">"A person wearing a white shirt and black pants, performing stretching exercises in a dimly lit room with wooden floors."</p>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_01/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_01/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_01/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr class="scene-divider">
+
+    <p class="prompt-text">"An older man in a white t-shirt and dark pants dancing inside a vintage diner with a counter, stools, and jukebox."</p>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_02/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_02/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_02/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr class="scene-divider">
+
+    <p class="prompt-text">"A woman in black performing yoga poses in front of a modern building with large windows and trees casting shadows."</p>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_03/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_03/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_03/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr class="scene-divider">
+
+    <p class="prompt-text">"A man in a t-shirt is dancing in a room with large windows and filled with large plants."</p>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_04/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_04/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_04/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr class="scene-divider">
+
+    <p class="prompt-text"> "A man in a black t-shirt, blue shorts and wearing sneakers is moving his arms and legs in various directions in front of a modern building with a tree casting shadows on the ground."</p>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_05/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_05/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_05/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+
+        <hr class="scene-divider">
+
+    <p class="prompt-text">"A man in a black t-shirt with a logo on the front and blue jeans is performing a series of dance moves near a large brick wall, a metal staircase, and stacked wooden pallets."</p>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_06/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_06/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_06/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+    <hr class="scene-divider">
+
+    <p class="prompt-text">"A woman performing dancing in an urban setting with industrial structures in the background."</p>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_07/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_07/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_07/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+    <hr class="scene-divider">
+
+    <p class="prompt-text">"A man in a black sweatshirt dancing in a dimly lit storage room with a hanging light bulb and metal shelves."</p>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_08/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">   
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_08/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_08/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+    <hr class="scene-divider">
+
+    <p class="prompt-text">"A man in a black shirt stretching his arms and legs in a modern room with large windows."</p>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_09/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_09/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_09/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+    <hr class="scene-divider">
+
+    <p class="prompt-text">"A man in a gray t-shirt and black shorts stretching in a clothing store."</p>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_10/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_10/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="results/scene_10/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <link href='https://fonts.googleapis.com/css?family=Noto+Sans' rel='stylesheet'>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>MV-Forcing — Supplementary Material</title>
+    <link href="../style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <h1 align="center">MV-Forcing: Long Multi-View Video Generation via<br>4D-Grounded Spatio-Temporal Self-Forcing</h1>
+    <h2 align="center">Supplementary Material</h2>
+
+    <p align="center">&nbsp;</p>
+    <h5 align="left">
+        Please click on the sections below to view our interactive results, comparisons, and ablations:
+    </h5>
+    <ul>
+        <li><a href="../index.html">Our Results</a></li>
+        <li><a href="real_world.html">Real-World Results</a></li>
+        <li><a href="comparisons_short.html">Short Sequence Comparisons</a></li>
+        <li><a href="comp_long.html">Long Sequence Comparisons</a></li>
+        <li><a href="ablations.html">Component Ablations</a></li>
+        <li><a href="ablations_views.html">View Scaling Ablations</a></li>
+        <li><a href="temp.html">Temporal Scaling Ablations</a></li>
+    </ul>
+
+    <!------------------ BEGIN SECTION ------------------>
+    <p>&nbsp;</p>
+    <hr>
+
+    <h2 align="left">Component Ablations</h2>
+
+    <p align="left">
+        We ablate the key components of our framework (Tab. 3, Sec. 4.2 and Fig. 8 in the paper):<br><br>
+        - <b>w/o View Unrolling</b>: trains with standard DMD along the view axis without spatio-temporal self-forcing unrolling. Visual quality degrades noticeably across views, with background elements shifting unnaturally throughout the sequence.<br>
+        - <b>w/o CUT3R</b>: removes the geometric prior entirely. Cross-view consistency degrades significantly, note the inconsistent store signs and occluded background behind the person changing between views.<br>
+        - <b>w/o Accumulation</b>: conditions each view only on the single preceding view's geometry, rather than the accumulated state from all previous views. Note the tree behind the person shifts forward and changes shape across views.<br>
+        - <b>Manual Rendering</b>: replaces CUT3R's learned raymap query with classical forward-warping via z-buffer splatting. Scene elements, such as the tree behind the person, appear displaced due to warping artifacts in occluded regions.<br><br>
+        For each variant, we show all 3 generated views to highlight cross-view consistency differences.
+        Hover over any video to play.
+    </p>
+    <br>
+
+    <p class="prompt-text">"A person in a black shirt stretching their arms outward in a modern shopping mall."</p>
+
+    <h3>w/o View Unrolling</h3>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/wo_unrolling/scene_01/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/wo_unrolling/scene_01/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/wo_unrolling/scene_01/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+    <h3>w/o CUT3R</h3>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/wo_cut3r/scene_01/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/wo_cut3r/scene_01/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/wo_cut3r/scene_01/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+    <h3>w/o Accumulation</h3>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/wo_accumulation/scene_01/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/wo_accumulation/scene_01/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/wo_accumulation/scene_01/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+    <h3>Manual Rendering</h3>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/manual_rendering/scene_01/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/manual_rendering/scene_01/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/manual_rendering/scene_01/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+    <h3>Ours</h3>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/ours/scene_01/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/ours/scene_01/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/components/ours/scene_01/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

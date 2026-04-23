@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <link href='https://fonts.googleapis.com/css?family=Noto+Sans' rel='stylesheet'>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>MV-Forcing — Supplementary Material</title>
+    <link href="../style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <h1 align="center">MV-Forcing: Long Multi-View Video Generation via<br>4D-Grounded Spatio-Temporal Self-Forcing</h1>
+    <h2 align="center">Supplementary Material</h2>
+
+    <p align="center">&nbsp;</p>
+    <h5 align="left">
+        Please click on the sections below to view our interactive results, comparisons, and ablations:
+    </h5>
+    <ul>
+        <li><a href="../index.html">Our Results</a></li>
+        <li><a href="real_world.html">Real-World Results</a></li>
+        <li><a href="comparisons_short.html">Short Sequence Comparisons</a></li>
+        <li><a href="comp_long.html">Long Sequence Comparisons</a></li>
+        <li><a href="ablations.html">Component Ablations</a></li>
+        <li><a href="ablations_views.html">View Scaling Ablations</a></li>
+        <li><a href="temp.html">Temporal Scaling Ablations</a></li>
+    </ul>
+
+    <!------------------ BEGIN SECTION ------------------>
+    <p>&nbsp;</p>
+    <hr>
+
+    <h2 align="left">View Scaling Ablations</h2>
+
+    <p align="left">
+        We evaluate how generation quality evolves as the number of views increases from 2 to 5 at a fixed temporal length of 81 frames (Tab. 4, Sec. 4.2 and Fig. 9 in the paper).
+        For each configuration, we show all generated views. The accumulated CUT3R geometric prior grounds each new view in the full 4D structure observed so far, maintaining consistent scene geometry even as the view count grows.
+        Hover over any video to play.
+    </p>
+    <br>
+
+    <p class="prompt-text">"A child in a green t-shirt dancing in a modern living room."</p>
+
+    <h3>2 Views</h3>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="50%" class="video-label">View 1</th>
+                <th width="50%" class="video-label">View 2</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/2views/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/2views/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+    <h3>3 Views</h3>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="33%" class="video-label">View 1</th>
+                <th width="33%" class="video-label">View 2</th>
+                <th width="33%" class="video-label">View 3</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/3views/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/3views/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/3views/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+    <h3>4 Views</h3>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="25%" class="video-label">View 1</th>
+                <th width="25%" class="video-label">View 2</th>
+                <th width="25%" class="video-label">View 3</th>
+                <th width="25%" class="video-label">View 4</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/4views/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/4views/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/4views/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/4views/view_3.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+    <h3>5 Views</h3>
+    <table class="result-table" width="100%" align="center">
+        <tbody>
+            <tr>
+                <th width="20%" class="video-label">View 1</th>
+                <th width="20%" class="video-label">View 2</th>
+                <th width="20%" class="video-label">View 3</th>
+                <th width="20%" class="video-label">View 4</th>
+                <th width="20%" class="video-label">View 5</th>
+            </tr>
+            <tr>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/5views/view_0.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/5views/view_1.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/5views/view_2.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/5views/view_3.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+                <td><div class="video-container">
+                    <video onmouseover="this.setAttribute('controls', '');this.play();" onmouseout="this.removeAttribute('controls');this.pause()" muted width="95%" class="result-video">
+                        <source src="../ablations/views/scene_01/5views/view_4.mp4" type="video/mp4">
+                    </video>
+                </div></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
