@@ -132,15 +132,16 @@
             <p class="has-text-justified">
                 Recent advances in video diffusion models have enabled either long single-view generation through temporal autoregression, 
                 or short multi-view synthesis through bidirectional attention. However, generating long, multi-view consistent videos of 
-                dynamic scenes remains unsolved. In this work, we present MV-Forcing, a framework that composes temporal and view-wise autoregression 
-                within a single diffusion model by introducing a 4D geometric bridge between sequentially generated views. Our key insight is that 
-                an autoregressive 3D reconstruction model naturally interfaces between autoregressively generated views. Given a completed source view, 
-                we reconstruct its 3D structure and render a geometric prior of the next target viewpoint, which the diffusion model refines 
-                into a photorealistic video. To extend generation beyond the teacher's fixed temporal window, we introduce a joint denoising regime 
-                where both view slots are initialized from noise during training, enabling temporally unbounded generation. We distill the model via 
-                Distribution Matching Distillation with Spatio-Temporal Self-Forcing, closing the train-inference exposure bias gap for both temporal 
-                and view-sequential autoregression. Extensive experiments demonstrate that MV-Forcing produces geometrically consistent multi-view videos 
-                of dynamic scenes at arbitrary lengths and viewpoint counts using a single few-step student model.
+                dynamic scenes remains unsolved. In this work, we present MV-Forcing, a framework that composes temporal and view-wise 
+                autoregression within a single diffusion model by introducing a 4D geometric bridge between sequentially generated views. 
+                Our key insight is that an autoregressive 3D reconstruction model naturally interfaces between autoregressively generated views. 
+                Given a completed source view, we reconstruct its 3D structure and render a geometric prior of the next target viewpoint, which 
+                the diffusion model refines into a high-quality video. To extend generation beyond the teacher's fixed temporal window, we 
+                introduce a joint denoising regime where both view slots are initialized from noise during training, enabling temporally unbounded 
+                generation. We distill the model via Distribution Matching Distillation with Spatio-Temporal Self-Forcing, closing the train-inference 
+                exposure bias gap for both temporal and view-sequential autoregression. Extensive experiments on both synthetic and real-world data 
+                demonstrate that MV-Forcing produces geometrically consistent multi-view videos of dynamic scenes at arbitrary lengths and viewpoint 
+                counts using a single few-step student model.            
             </p>
     </section>
 
@@ -266,7 +267,7 @@
             <h2 align="center">How does it work?</h2>
 		        <br>
             <div class="im_container has-text-justified" width="90%" align="center">
-                <img align="center" src="./webpage_assets/overview.png" alt="Overview" width="100%">
+                <img align="center" src="./webpage_assets/overview_cr.png" alt="Overview" width="100%">
             </div> 
             <p class="has-text-justified">
                 <br>
