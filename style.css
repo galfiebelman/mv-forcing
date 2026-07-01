@@ -421,21 +421,61 @@ button[class^="prompt_title_"] {
 /* --- MOBILE --- */
 
 @media (max-width: 768px) {
+    .intro-container,
+    .abstract-container,
+    .method-container,
+    .ack-container,
+    .bib-container,
+    .tldr-section .intro-container {
+        width: 95%;
+    }
+    .page-container {
+    width: 100%;
+    padding: 0 12px;
+    }   
+
+    p {
+        font-size: 15px;
+    }
+
+    .abstract-container p,
+    .intro-paragraph p {
+        font-size: 16px;
+    }
+
+    .result-caption {
+        font-size: 15px;
+    }
+
+    .author-block {
+        font-size: 16px;
+    }
+
+    .author-block2 {
+        font-size: 14px;
+    }
+
+    .intro-paragraph_bold {
+        font-size: 17px;
+    }
+
     h1 {
-        font-size: 32px;
-        margin-top: 20px;
+    font-size: 26px;
+    margin-top: 16px;
     }
 
     h2 {
-        font-size: 24px;
+        font-size: 20px;
     }
-    
+
     h3 {
-        font-size: 24px;
+        font-size: 20px;
     }
+
     h4 {
-        font-size: 24px;
+        font-size: 22px;
     }
+
 
     .result-video {
         width: 100%;
