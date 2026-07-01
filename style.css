@@ -285,6 +285,7 @@ button[class^="prompt_title_"] {
 
 .result-item {
     text-align: center;
+    margin-bottom: 40px;
 }
 
 .result-item video {
@@ -296,12 +297,12 @@ button[class^="prompt_title_"] {
 
 .result-caption {
     font-family: 'Lora', serif;
-    font-size: 15px;       /* Slightly bumped up for better readability */
+    font-size: 18px;       /* Slightly bumped up for better readability */
     font-style: italic;
-    color: #444;           /* A slightly softer gray to match the image's muted tone */
-    margin-top: 12px;      /* Gives the text a bit more breathing room under the video */
+    color: #000;           /* A slightly softer gray to match the image's muted tone */
+    margin-top: 8px;      /* Gives the text a bit more breathing room under the video */
     line-height: 1.5;      /* Increased slightly for an elegant, spacious feel */
-    font-weight: 400;      /* Changed from 500 to normal (400) to stop the italics from looking too heavy */
+    font-weight: 500;      /* Changed from 500 to normal (400) to stop the italics from looking too heavy */
     text-align: center;    /* Essential for making it sit nicely centered under your video */
     letter-spacing: 0.3px; /* A tiny bit of spacing makes serif italics look much more refined */
 }
