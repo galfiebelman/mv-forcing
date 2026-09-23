@@ -19,7 +19,7 @@ from utils.wan_wrapper import (
     WanDiffusionWrapper, WanDSDiffusionWrapper, WanMVBidirDiffusionWrapper,
     WanTextEncoder, WanVAEWrapper,
 )
-from pipeline.mv_forcing_inference_pipeline import (
+from pipeline.cut3r_prior import (
     _run_cut3r_on_frames, _render_raymap_frames,
     _postprocess_rendered_to_z,_feed_frames_to_cut3r_state,
 )
@@ -651,7 +651,6 @@ class TextToMVPipeline(nn.Module):
         """
         Generate view N via continuous rolling Self-Forcing, conditioned on
         clean view0 latent + CUT3R geometric prior. No chunks, no overlap.
-        Mirrors _generate_view_n_rolling from mv_forcing_inference_pipeline.
         """
         noise = torch.randn(
             [1, total_frames, 16, 60, 104],
@@ -843,7 +842,6 @@ class TextToMVPipeline(nn.Module):
     ) -> torch.Tensor:
         """
         CUT3R on all pixel frames → render all targets → z_rendered.
-        Mirrors _compute_cut3r_full from mv_forcing_inference_pipeline.
         """
         pf_per_lf = 4
         total_pixel_frames = prev_view_pixels.shape[0]

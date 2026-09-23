@@ -182,7 +182,6 @@ parser.add_argument("--long_rolling", action="store_true",
                     help="Memory-efficient rolling generation for very long sequences")
 parser.add_argument("--fps", type=int, default=16)
 parser.add_argument("--seed", type=int, default=24)
-parser.add_argument("--use_ema", action="store_true")
 parser.add_argument("--method_name", type=str, default=None)
 
 # External assets
@@ -262,9 +261,8 @@ pipeline.sf_generator.load_state_dict(sf_sd[key] if key in sf_sd else sf_sd)
 print(f"Self-Forcing weights loaded (key='{key}').")
 
 student_sd = torch.load(args.checkpoint_path, map_location="cpu")
-key = "generator_ema" if args.use_ema and "generator_ema" in student_sd else "generator"
-pipeline.student.load_state_dict(student_sd[key] if key in student_sd else student_sd)
-print(f"Student weights loaded (key='{key}').")
+pipeline.student.load_state_dict(student_sd.get("generator", student_sd))
+print("Student weights loaded.")
 
 pipeline = pipeline.to(dtype=torch.bfloat16)
 pipeline.cut3r_model = load_cut3r(args.cut3r_path, device, root=args.cut3r_root)

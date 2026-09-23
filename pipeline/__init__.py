@@ -3,11 +3,9 @@
 # See NOTICE.md and licenses/LICENSE.Apache-2.0.
 
 from .self_forcing_training_mv_bidir import SelfForcingTrainingPipelineMVBidir
-from .mv_forcing_inference_pipeline import MVForcingInferencePipeline
 from .text_to_mv_pipeline import TextToMVPipeline
 
 __all__ = [
     "SelfForcingTrainingPipelineMVBidir",
-    "MVForcingInferencePipeline",
     "TextToMVPipeline",
 ]
