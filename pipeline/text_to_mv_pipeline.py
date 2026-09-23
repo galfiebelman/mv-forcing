@@ -537,10 +537,15 @@ class TextToMVPipeline(nn.Module):
         v0_pixels = (v0_pixels * 0.5 + 0.5).clamp(0, 1)
         self.vae.model.clear_cache()
 
+        # CUT3R is queried per ingested frame: the frame index selects the
+        # state snapshot, CUT3R's own pose estimate and the supplied camera
+        # alike. Feed one frame per latent frame so all three stay aligned.
+        num_prior_frames = min(v0_latent.shape[1], c2w_cond.shape[0])
+        prior_frames = v0_pixels[0][::4][:num_prior_frames]
         outputs, state_args, frames_resized, H_c, W_c = _run_cut3r_on_frames(
-            v0_pixels[0], self.cut3r_model, self.cut3r_size, self.device)
+            prior_frames, self.cut3r_model, self.cut3r_size, self.device)
         H_out, W_out = v0_pixels.shape[3], v0_pixels.shape[4]
-        frame_indices = list(range(v0_latent.shape[1]))
+        frame_indices = list(range(num_prior_frames))
 
         rendered_frames, conf_frames = _render_raymap_frames(
             outputs, state_args, c2w_cond, c2w_tgt,
