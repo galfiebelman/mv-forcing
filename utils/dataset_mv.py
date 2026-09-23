@@ -135,13 +135,23 @@ class TextCameraDataset(torch.utils.data.Dataset):
         return len(self.text)
 
 class TensorDataset(torch.utils.data.Dataset):
-    def __init__(self, base_path, cutt3r_method=None):
+    """SynCamVideo scenes as view pairs, optionally with a third view.
+
+    With ``num_generated_views == 2`` the sample also carries the camera of a
+    third view forming a valid pair with the second one. View-sequential
+    unrolling generates that view from noise conditioned on its own previous
+    output, so no ground-truth latents are needed for it -- only its cameras,
+    used to render the geometric prior online.
+    """
+
+    def __init__(self, base_path, cutt3r_method=None, num_generated_views=1):
         metadata = pd.read_csv(os.path.join(base_path, "metadata.csv"))
         self.path = [os.path.join(base_path, file_name) for file_name in metadata["file_name"]]
         print(len(self.path), "videos in metadata.")
         self.path = [i.replace('.mp4', '.pth') for i in self.path]# if os.path.exists(i.replace('.mp4', '.pth'))]
         print(len(self.path), "tensors cached in metadata.")
         self.cutt3r_method = cutt3r_method  # None or "raymap"
+        self.num_generated_views = num_generated_views
         assert len(self.path) > 0
 
     def parse_matrix(self, matrix_str):
@@ -196,9 +206,9 @@ class TensorDataset(torch.utils.data.Dataset):
                 camera_path = os.path.join(base_path, "cameras", "camera_extrinsics.json")#"../SynCamMaster/toy/f24_aperture5/scene1255/cameras/camera_extrinsics.json"#
                 with open(camera_path, 'r') as file:
                     cam_data = json.load(file)
-                multiview_c2ws = []
                 cam_idx = list(range(81))[::4]
-                for view_idx in [view1_idx, view2_idx]:
+
+                def load_c2ws(view_idx):
                     traj = [self.parse_matrix(cam_data[f"frame{idx}"][f"cam{view_idx:02d}"]) for idx in cam_idx]
                     traj = np.stack(traj).transpose(0, 2, 1)
                     c2ws = []
@@ -207,19 +217,40 @@ class TensorDataset(torch.utils.data.Dataset):
                         c2w[:3, 1] *= -1.
                         c2w[:3, 3] /= 200
                         c2ws.append(c2w)
-                    multiview_c2ws.append(c2ws)
-                view1_cam_params = [Camera(cam_param) for cam_param in multiview_c2ws[0]]
-                view2_cam_params = [Camera(cam_param) for cam_param in multiview_c2ws[1]]
-                relative_poses = []
-                for i in range(len(view1_cam_params)):
-                    relative_pose = self.get_relative_pose([view1_cam_params[i], view2_cam_params[i]])
-                    relative_poses.append(torch.as_tensor(relative_pose)[:, :3, :])
-                pose_embedding = torch.stack(relative_poses, dim=1)  # v,21,3,4
-                pose_embedding = rearrange(pose_embedding, 'v f c d -> v f (c d)')
-                data['camera'] = pose_embedding.to(torch.bfloat16)
+                    return c2ws
+
+                def relative_embedding(src_c2ws, tgt_c2ws):
+                    src_cams = [Camera(c) for c in src_c2ws]
+                    tgt_cams = [Camera(c) for c in tgt_c2ws]
+                    relative_poses = [
+                        torch.as_tensor(self.get_relative_pose([src_cams[i], tgt_cams[i]]))[:, :3, :]
+                        for i in range(len(src_cams))
+                    ]
+                    pose_embedding = torch.stack(relative_poses, dim=1)  # v,21,3,4
+                    return rearrange(pose_embedding, 'v f c d -> v f (c d)').to(torch.bfloat16)
+
+                view1_c2ws = load_c2ws(view1_idx)
+                view2_c2ws = load_c2ws(view2_idx)
+                data['camera'] = relative_embedding(view1_c2ws, view2_c2ws)
 
                 data['view1_path'] = view1_path
                 data['view2_path'] = view2_path
+
+                # --- Third view for view-sequential unrolling ---
+                # Only its cameras are needed: the view itself is generated from
+                # noise, conditioned on the student's own previous output.
+                if self.num_generated_views > 1:
+                    next_candidates = [b for a, b in availble_list
+                                       if a == view2_idx and b != view1_idx]
+                    if not next_candidates:
+                        raise ValueError(
+                            f"no valid third view after cam{view2_idx:02d} in {base_path}")
+                    view3_idx = int(random.choice(next_candidates))
+                    view3_c2ws = load_c2ws(view3_idx)
+                    data['camera_next'] = relative_embedding(view2_c2ws, view3_c2ws)
+                    data['c2w_src_next'] = torch.tensor(np.stack(view2_c2ws), dtype=torch.float32)
+                    data['c2w_tgt_next'] = torch.tensor(np.stack(view3_c2ws), dtype=torch.float32)
+                    data['view3_idx'] = view3_idx
 
                 # --- CUT3R rendered geometric prior ---
                 if self.cutt3r_method is not None:

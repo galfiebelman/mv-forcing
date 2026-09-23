@@ -6,6 +6,10 @@
 trainer: score_distillation_mv_recam
 distribution_loss: dmd_mv_recam
 
+# The ReCamMaster teacher drifts between separate trajectory generations, so the
+# real-world stage supervises a single view transition rather than unrolling.
+num_generated_views: 1
+
 # Checkpoints
 generator_ckpt: outputs/train_dmd_synthetic/checkpoint_model_001600/model.pt
 teacher_ckpt: checkpoints/recam_teacher.ckpt

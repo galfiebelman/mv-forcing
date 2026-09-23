@@ -4,9 +4,13 @@ from torch import nn
 import torch.distributed as dist
 import torch
 
-from pipeline import SelfForcingTrainingPipelineMV, SelfForcingTrainingPipelineMVBidir
+from pipeline import SelfForcingTrainingPipelineMVBidir
+from pipeline.cut3r_prior import (
+    _postprocess_rendered_to_z, _render_raymap_frames, _run_cut3r_on_frames,
+)
 from utils.loss import get_denoising_loss
 from utils.misc import load_mixed_state_dict
+from utils.paths import load_cut3r
 from utils.wan_wrapper import WanMVDiffusionWrapper, WanTextEncoder, WanVAEWrapper, WanMVBidirDiffusionWrapper, WanReCamDiffusionWrapper
 
 
@@ -20,6 +24,12 @@ class BaseMVModel(nn.Module):
         self.device = device
         self.args = args
         self.dtype = torch.bfloat16 if args.mixed_precision else torch.float32
+        # View-sequential unrolling: 1 = a single generated view, 2 = also unroll
+        # to a second one conditioned on the student's own output.
+        self.num_generated_views = getattr(args, "num_generated_views", 1)
+        self.cut3r_model = None
+        self.cut3r_size = getattr(args, "cut3r_size", 512)
+        self.focal_ratio = getattr(args, "focal_ratio", 24.0 / 23.76)
         if hasattr(args, "denoising_step_list"):
             self.denoising_step_list = torch.tensor(args.denoising_step_list, dtype=torch.long)
             if args.warp_denoising_step:
@@ -193,38 +203,109 @@ class SelfForcingModelMV(BaseMVModel):
         # Sync num_generated_frames across all processes
         noise_shape[1] = num_generated_frames
 
-        pred_image_or_video, denoised_timestep_from, denoised_timestep_to, both_noisy = self._consistency_backward_simulation(
+        pred_pairs, denoised_timestep_from, denoised_timestep_to, both_noisy = self._consistency_backward_simulation(
             noise=torch.randn(noise_shape,
                               device=self.device, dtype=self.dtype),
             **conditional_dict
         )
-        # Slice last 21 frames
-        if pred_image_or_video.shape[1] > 21:
-            with torch.no_grad():
-                # Reencode to get image latent
-                latent_to_decode = pred_image_or_video[:, :-20, ...]
-                # Deccode to video
-                pixels = self.vae.decode_to_pixel(latent_to_decode)
-                frame = pixels[:, -1:, ...].to(self.dtype)
-                frame = rearrange(frame, "b t c h w -> b c t h w")
-                # Encode frame to get image latent
-                image_latent = self.vae.encode_to_latent(frame).to(self.dtype)
-            pred_image_or_video_last_21 = torch.cat([image_latent, pred_image_or_video[:, -20:, ...]], dim=1)
-        else:
-            pred_image_or_video_last_21 = pred_image_or_video
 
-        if num_generated_frames != min_num_frames:
-            # Currently, we do not use gradient for the first chunk, since it contains image latents
-            gradient_mask = torch.ones_like(pred_image_or_video_last_21, dtype=torch.bool)
-            if self.args.independent_first_frame:
-                gradient_mask[:, :1] = False
+        pred_last_21, gradient_masks = [], []
+        for pred_image_or_video in pred_pairs:
+            # Slice last 21 frames
+            if pred_image_or_video.shape[1] > 21:
+                with torch.no_grad():
+                    # Reencode to get image latent
+                    latent_to_decode = pred_image_or_video[:, :-20, ...]
+                    # Deccode to video
+                    pixels = self.vae.decode_to_pixel(latent_to_decode)
+                    frame = pixels[:, -1:, ...].to(self.dtype)
+                    frame = rearrange(frame, "b t c h w -> b c t h w")
+                    # Encode frame to get image latent
+                    image_latent = self.vae.encode_to_latent(frame).to(self.dtype)
+                pred_image_or_video_last_21 = torch.cat([image_latent, pred_image_or_video[:, -20:, ...]], dim=1)
             else:
-                gradient_mask[:, :self.num_frame_per_block] = False
-        else:
-            gradient_mask = None
+                pred_image_or_video_last_21 = pred_image_or_video
 
-        pred_image_or_video_last_21 = pred_image_or_video_last_21.to(self.dtype)
-        return pred_image_or_video_last_21, gradient_mask, denoised_timestep_from, denoised_timestep_to, both_noisy
+            if num_generated_frames != min_num_frames:
+                # Currently, we do not use gradient for the first chunk, since it contains image latents
+                gradient_mask = torch.ones_like(pred_image_or_video_last_21, dtype=torch.bool)
+                if self.args.independent_first_frame:
+                    gradient_mask[:, :1] = False
+                else:
+                    gradient_mask[:, :self.num_frame_per_block] = False
+            else:
+                gradient_mask = None
+
+            pred_last_21.append(pred_image_or_video_last_21.to(self.dtype))
+            gradient_masks.append(gradient_mask)
+
+        return pred_last_21, gradient_masks, denoised_timestep_from, denoised_timestep_to, both_noisy
+
+    def _pair_conditional_dict(self, conditional_dict: dict, pair_index: int) -> dict:
+        """Conditioning for the pair-th generated view transition.
+
+        Later pairs are scored with the camera of their own transition. The
+        teacher ignores the geometric prior, so it needs no substitution.
+        """
+        if pair_index == 0:
+            return conditional_dict
+        pair_dict = dict(conditional_dict)
+        pair_dict["cam_emb"] = conditional_dict["cam_emb_next"]
+        return pair_dict
+
+    @torch.no_grad()
+    def _render_prior(self, prev_latent, c2w_src, c2w_tgt):
+        """Render the geometric prior of the next view from a generated view.
+
+        Mirrors what inference does: decode the previous view, accumulate it in
+        CUT3R's state, query the next view's raymap, and encode the render with
+        its confidence map. The VAE is parked on CPU during training, so it is
+        moved to the GPU only for this decode/encode and released afterwards.
+
+        Args:
+            prev_latent: [1, F, C, H, W] — the student's previous output
+            c2w_src, c2w_tgt: [F, 4, 4] — cameras of this view transition
+        Returns:
+            z_rendered: [2, 17, F, H_lat, W_lat]; slot 0 is zeros, since the
+            conditioning view needs no prior.
+        """
+        if self.cut3r_model is None:
+            self.cut3r_model = load_cut3r(
+                self.args.cut3r_path, self.device,
+                root=getattr(self.args, "cut3r_root", None))
+
+        self.vae.to(self.device)
+        try:
+            pixels = self.vae.decode_to_pixel(prev_latent)
+            pixels = (pixels * 0.5 + 0.5).clamp(0, 1)[0]      # [T_pix, 3, H, W]
+            self.vae.model.clear_cache()
+
+            # One frame per latent frame, matching the camera sampling used when
+            # the precomputed priors were produced.
+            num_prior_frames = min(prev_latent.shape[1], c2w_src.shape[0])
+            frames = pixels[::4][:num_prior_frames]
+            c2w_src = c2w_src[:num_prior_frames]
+            c2w_tgt = c2w_tgt[:num_prior_frames]
+            outputs, state_args, frames_resized, H_c, W_c = _run_cut3r_on_frames(
+                frames, self.cut3r_model, self.cut3r_size, self.device)
+            H_out, W_out = frames.shape[2], frames.shape[3]
+
+            rendered, conf = _render_raymap_frames(
+                outputs, state_args, c2w_src, c2w_tgt, self.focal_ratio,
+                list(range(frames.shape[0])), H_c, W_c, H_out, W_out,
+                self.device, self.cut3r_model)
+            conf_video = torch.stack(conf)
+            masks = [((c - 1.0) / (conf_video.max() - 1.0 + 1e-6)).clamp(0, 1)
+                     for c in conf]
+            z_rendered = _postprocess_rendered_to_z(
+                rendered, masks, self.vae, H_out, W_out, self.device)
+            self.vae.model.clear_cache()
+        finally:
+            self.vae.cpu()
+            torch.cuda.empty_cache()
+
+        z_rendered = torch.cat([torch.zeros_like(z_rendered), z_rendered], dim=0)
+        return z_rendered.to(dtype=self.dtype, device=self.device)
 
     def _consistency_backward_simulation(
         self,
@@ -268,4 +349,6 @@ class SelfForcingModelMV(BaseMVModel):
             context_noise=self.args.context_noise,
             num_views=self.args.num_views,
             p_both_noisy=getattr(self.args, "p_both_noisy", 0.0),
+            num_generated_views=self.num_generated_views,
+            render_prior=self._render_prior if self.num_generated_views > 1 else None,
         )

@@ -163,7 +163,8 @@ class Trainer:
         else:
             dataset = TensorDataset(
                 config.data_path,
-                cutt3r_method=getattr(config, "cutt3r_method", None))
+                cutt3r_method=getattr(config, "cutt3r_method", None),
+                num_generated_views=getattr(config, "num_generated_views", 1))
         sampler = torch.utils.data.distributed.DistributedSampler(
             dataset, shuffle=True, drop_last=True)
         dataloader = torch.utils.data.DataLoader(
@@ -258,6 +259,13 @@ class Trainer:
         prompt_emb_tensor = rearrange(prompt_emb_tensor, 'b v ... -> (b v) ...')
         cam_emb = batch["camera"].to(device=self.device, dtype=self.dtype)
         cam_emb = rearrange(cam_emb, 'b v ... -> (b v) ...')
+        # View-sequential unrolling needs the next transition's cameras.
+        cam_emb_next = batch.get("camera_next", None)
+        if cam_emb_next is not None:
+            cam_emb_next = rearrange(
+                cam_emb_next.to(device=self.device, dtype=self.dtype), 'b v ... -> (b v) ...')
+            c2w_src_next = batch["c2w_src_next"][0].to(device=self.device)
+            c2w_tgt_next = batch["c2w_tgt_next"][0].to(device=self.device)
         if self.config.i2v:
             clean_latent = None
             image_latent = batch["ode_latent"][:, -1][:, 0:1, ].to(
@@ -283,6 +291,12 @@ class Trainer:
                 "origin_latents": origin_latents,  # GT view 0 for pipeline conditioning
                 "z_rendered": z_rendered
             }
+            if cam_emb_next is not None:
+                conditional_dict.update({
+                    "cam_emb_next": cam_emb_next,
+                    "c2w_src_next": c2w_src_next,
+                    "c2w_tgt_next": c2w_tgt_next,
+                })
             uncond_template = self.model.unconditional_dict_template
             current_batch_size = conditional_dict["prompt_embeds"].shape[0]
             unconditional_dict = {

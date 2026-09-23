@@ -6,6 +6,11 @@
 trainer: score_distillation_mv
 distribution_loss: dmd_mv
 
+# View-sequential unrolling: generate two views, the second conditioned on the
+# student's own detached output with its geometric prior rendered online.
+num_generated_views: 2
+cut3r_path: CUT3R/src/cut3r_512_dpt_4_64.pth
+
 # Checkpoints
 generator_ckpt: outputs/train_ode_synthetic/checkpoint_model_003000/model.pt
 teacher_ckpt: checkpoints/syncammaster_step20000.ckpt

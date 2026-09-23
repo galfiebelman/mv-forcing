@@ -1,4 +1,4 @@
-from pipeline import SelfForcingTrainingPipelineMV
+from pipeline import SelfForcingTrainingPipelineMVBidir
 import torch.nn.functional as F
 from typing import Optional, Tuple
 import torch
@@ -29,7 +29,7 @@ class DMDMVRecam(SelfForcingModelMV):
             self.fake_score.enable_gradient_checkpointing()
 
         # this will be init later with fsdp-wrapped modules
-        self.inference_pipeline: SelfForcingTrainingPipelineMV = None
+        self.inference_pipeline: SelfForcingTrainingPipelineMVBidir = None
 
         # Step 2: Initialize all dmd hyperparameters
         self.num_train_timestep = args.num_train_timestep
@@ -56,7 +56,7 @@ class DMDMVRecam(SelfForcingModelMV):
         timestep: torch.Tensor,
         conditional_dict: dict, unconditional_dict: dict,
         normalization: bool = True,
-        source_latents=None, teacher_z_rendered=None,
+        source_latents=None,
     ) -> Tuple[torch.Tensor, dict]:
         """
         Compute the KL grad (eq 7 in https://arxiv.org/abs/2311.18828).
@@ -88,7 +88,6 @@ class DMDMVRecam(SelfForcingModelMV):
             source_latents=source_latents,
             conditional_dict=teacher_cond,
             timestep=timestep_v1,
-            z_rendered=teacher_z_rendered,
 
         )
 
@@ -98,7 +97,6 @@ class DMDMVRecam(SelfForcingModelMV):
                 source_latents=source_latents,
                 conditional_dict=teacher_uncond,
                 timestep=timestep_v1,
-                z_rendered=teacher_z_rendered,
             )
             pred_fake_image = pred_fake_image_cond + (
                 pred_fake_image_cond - pred_fake_image_uncond
@@ -114,7 +112,6 @@ class DMDMVRecam(SelfForcingModelMV):
             source_latents=source_latents,
             conditional_dict=teacher_uncond,
             timestep=timestep_v1,
-            z_rendered=teacher_z_rendered,
         )
 
         _, pred_real_image_uncond = self.real_score(
@@ -122,7 +119,6 @@ class DMDMVRecam(SelfForcingModelMV):
             source_latents=source_latents,
             conditional_dict=teacher_uncond,
             timestep=timestep_v1,
-            z_rendered=teacher_z_rendered,
         )
 
         pred_real_image = pred_real_image_cond + (
@@ -156,7 +152,7 @@ class DMDMVRecam(SelfForcingModelMV):
         denoised_timestep_from: int = 0,
         denoised_timestep_to: int = 0,
         both_noisy=False,
-        source_latents=None, teacher_z_rendered=None,
+        source_latents=None,
 
     ) -> Tuple[torch.Tensor, dict]:
         """
@@ -209,7 +205,6 @@ class DMDMVRecam(SelfForcingModelMV):
                 conditional_dict=conditional_dict,
                 unconditional_dict=unconditional_dict,
                 source_latents=source_latents,
-                teacher_z_rendered=teacher_z_rendered,
             )
         target = original_latent[1:2]
         target_grad = grad[1:2]
@@ -234,7 +229,6 @@ class DMDMVRecam(SelfForcingModelMV):
         unconditional_dict: dict,
         clean_latent: torch.Tensor,
         source_latents=None,
-        teacher_z_rendered=None,
         initial_latent: torch.Tensor = None
     ) -> Tuple[torch.Tensor, dict]:
         """
@@ -252,25 +246,31 @@ class DMDMVRecam(SelfForcingModelMV):
             - generator_log_dict: a dictionary containing the intermediate tensors for logging.
         """
         # Step 1: Unroll generator to obtain fake videos
-        pred_image, gradient_mask, denoised_timestep_from, denoised_timestep_to, both_noisy = self._run_generator(
+        pred_pairs, gradient_masks, denoised_timestep_from, denoised_timestep_to, both_noisy = self._run_generator(
             image_or_video_shape=image_or_video_shape,
             conditional_dict=conditional_dict,
             initial_latent=initial_latent
         )
 
-        # Step 2: Compute the DMD loss
-        dmd_loss, dmd_log_dict = self.compute_distribution_matching_loss(
-            image_or_video=pred_image,
-            conditional_dict=conditional_dict,
-            unconditional_dict=unconditional_dict,
-            gradient_mask=gradient_mask,
-            denoised_timestep_from=denoised_timestep_from,
-            denoised_timestep_to=denoised_timestep_to,
-            both_noisy=both_noisy,
-            source_latents=source_latents,
-            teacher_z_rendered=teacher_z_rendered,
-        )
-        total_loss = dmd_loss
+        # Step 2: Score every consecutive generated pair with the teacher and
+        # average, so the objective decomposes over the view axis.
+        dmd_losses, dmd_log_dict = [], {}
+        for pair_index, (pred_image, gradient_mask) in enumerate(zip(pred_pairs, gradient_masks)):
+            pair_loss, pair_log = self.compute_distribution_matching_loss(
+                image_or_video=pred_image,
+                conditional_dict=self._pair_conditional_dict(conditional_dict, pair_index),
+                unconditional_dict=unconditional_dict,
+                gradient_mask=gradient_mask,
+                denoised_timestep_from=denoised_timestep_from,
+                denoised_timestep_to=denoised_timestep_to,
+                both_noisy=both_noisy,
+                source_latents=source_latents,
+            )
+            dmd_losses.append(pair_loss)
+            if pair_index == 0:
+                dmd_log_dict = pair_log
+        total_loss = sum(dmd_losses) / len(dmd_losses)
+        dmd_log_dict["num_generated_pairs"] = len(dmd_losses)
 
         return total_loss, dmd_log_dict
 
@@ -281,7 +281,6 @@ class DMDMVRecam(SelfForcingModelMV):
         unconditional_dict: dict,
         clean_latent: torch.Tensor,
         source_latents=None,
-        teacher_z_rendered=None,
         initial_latent: torch.Tensor = None
     ) -> Tuple[torch.Tensor, dict]:
         """
@@ -301,7 +300,7 @@ class DMDMVRecam(SelfForcingModelMV):
 
         # Step 1: Run generator on backward simulated noisy input
         with torch.no_grad():
-            generated_image, _, denoised_timestep_from, denoised_timestep_to, _ = self._run_generator(
+            generated_pairs, _, denoised_timestep_from, denoised_timestep_to, _ = self._run_generator(
                 image_or_video_shape=image_or_video_shape,
                 conditional_dict=conditional_dict,
                 initial_latent=initial_latent
@@ -325,6 +324,9 @@ class DMDMVRecam(SelfForcingModelMV):
 
         critic_timestep = critic_timestep.clamp(self.min_step, self.max_step)
 
+        # The real-world stage supervises a single view transition, so the
+        # ReCamMaster critic scores the one generated pair.
+        generated_image = generated_pairs[0]
         gen_v1 = generated_image[1:2]
         critic_noise = torch.randn_like(gen_v1)
         critic_timestep_v1 = critic_timestep[1:2]
@@ -344,7 +346,6 @@ class DMDMVRecam(SelfForcingModelMV):
             source_latents=source_latents,
             conditional_dict=teacher_cond,
             timestep=critic_timestep_v1,
-            z_rendered=teacher_z_rendered,
         )
 
         # Step 3: Compute the denoising loss for the fake critic

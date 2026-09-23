@@ -7,12 +7,21 @@ import torch.distributed as dist
 
 class SelfForcingTrainingPipelineMVBidir:
     """
-    Self-forcing training pipeline for CausalWanMVBidirModel.
+    Spatio-temporal self-forcing training pipeline for CausalWanMVBidirModel.
 
-    Both views are processed simultaneously (batch dim = num_views).
-    Slot 0 = GT view 0 (clean, overwritten after noising).
-    Slot 1 = noisy view 1 (self-forcing target).
-    No view loop, no view KV cache.
+    One pass processes two view slots at once (batch dim = view slot):
+    slot 0 is the clean conditioning view, slot 1 is the view being generated
+    with temporal self-forcing.
+
+    View-sequential unrolling runs that pass ``num_generated_views`` times. The
+    first pass conditions on the ground-truth view; every later pass conditions
+    on the student's own detached output, with the geometric prior rendered
+    online from it, which mirrors inference. The teacher then scores each
+    consecutive generated pair.
+
+    With joint view denoising (probability ``p_both_noisy``) both slots start
+    from noise and there is no cross-view or geometric conditioning, so that
+    branch trains first-view generation from text only and does not unroll.
     """
 
     def __init__(self,
@@ -27,6 +36,8 @@ class SelfForcingTrainingPipelineMVBidir:
                  context_noise: int = 0,
                  num_views=2,
                  p_both_noisy=0.0,
+                 num_generated_views=1,
+                 render_prior=None,
                  **kwargs):
         super().__init__()
         self.scheduler = scheduler
@@ -47,6 +58,10 @@ class SelfForcingTrainingPipelineMVBidir:
         self.kv_cache_size = num_max_frames * self.frame_seq_length
         self.num_views = num_views
         self.p_both_noisy = p_both_noisy
+        self.num_generated_views = num_generated_views
+        # Callable (prev_latents, c2w_src, c2w_tgt) -> z_rendered, supplied by the
+        # model, which owns the VAE and the frozen CUT3R.
+        self.render_prior = render_prior
 
     def generate_and_sync_list(self, num_blocks, num_denoising_steps, device):
         rank = dist.get_rank() if dist.is_initialized() else 0
@@ -85,94 +100,145 @@ class SelfForcingTrainingPipelineMVBidir:
     ) -> torch.Tensor:
         """
         Args:
-            noise: [num_views, F, C, H, W] — noise for ALL views
-                   (only view 1's noise is actually used as starting point)
-            origin_latents: [num_views, F, C, H, W] — GT latents
-                   (only view 0 is used as clean conditioning)
-            conditional_dict: must contain 'prompt_embeds' [num_views, L, D]
-                              and 'cam_emb' [num_views, F, 12]
+            noise: [num_views, F, C, H, W] — noise for both view slots
+            origin_latents: [num_views, F, C, H, W] — ground-truth latents
+                   (only view 0 is used, as clean conditioning)
+            conditional_dict: 'prompt_embeds' [num_views, L, D],
+                   'cam_emb' [num_views, F, 12], optionally 'z_rendered',
+                   and for unrolling 'cam_emb_next', 'c2w_src_next', 'c2w_tgt_next'
+        Returns:
+            outputs: list of [num_views, F, C, H, W] tensors, one per generated
+                     pair; element k holds (conditioning view, generated view)
         """
         num_views, num_frames, num_channels, height, width = noise.shape
         assert num_views == self.num_views
-
         assert num_frames % self.num_frame_per_block == 0
+
         num_blocks = num_frames // self.num_frame_per_block
-        num_output_frames = num_frames
+        num_denoising_steps = len(self.denoising_step_list)
 
-        # Output buffer for all views
+        # Shared across passes so the reported timestep range is valid for all of them.
+        exit_flags = self.generate_and_sync_list(
+            num_blocks, num_denoising_steps, device=noise.device)
+        both_noisy = self._sync_both_noisy(noise.device)
+
+        outputs = [self._generate_pair(
+            noise=noise,
+            v0_latent=conditional_dict["origin_latents"][0:1],
+            cam_emb=conditional_dict["cam_emb"],
+            z_rendered_full=conditional_dict.get("z_rendered"),
+            conditional_dict=conditional_dict,
+            exit_flags=exit_flags,
+            both_noisy=both_noisy,
+        )]
+
+        # View-sequential unrolling: condition on the student's own output.
+        unroll = (not both_noisy) and self.num_generated_views > 1
+        if unroll:
+            if self.render_prior is None:
+                raise ValueError(
+                    "num_generated_views > 1 needs a render_prior callable to build "
+                    "the geometric prior of each generated view")
+            cam_emb_next = conditional_dict["cam_emb_next"]
+            c2w_src_next = conditional_dict["c2w_src_next"]
+            c2w_tgt_next = conditional_dict["c2w_tgt_next"]
+            prev_latent = outputs[-1][1:2].detach()
+            for _ in range(self.num_generated_views - 1):
+                z_rendered_next = self.render_prior(
+                    prev_latent, c2w_src_next, c2w_tgt_next)
+                outputs.append(self._generate_pair(
+                    noise=torch.randn_like(noise),
+                    v0_latent=prev_latent,
+                    cam_emb=cam_emb_next,
+                    z_rendered_full=z_rendered_next,
+                    conditional_dict=conditional_dict,
+                    exit_flags=exit_flags,
+                    both_noisy=False,
+                ))
+                prev_latent = outputs[-1][1:2].detach()
+
+        denoised_timestep_from, denoised_timestep_to = self._timestep_range(exit_flags)
+
+        if return_sim_step:
+            return outputs, denoised_timestep_from, denoised_timestep_to, exit_flags[0] + 1, both_noisy
+        return outputs, denoised_timestep_from, denoised_timestep_to, both_noisy
+
+    def _generate_pair(
+            self,
+            noise: torch.Tensor,
+            v0_latent: torch.Tensor,
+            cam_emb: torch.Tensor,
+            z_rendered_full: Optional[torch.Tensor],
+            conditional_dict: dict,
+            exit_flags: List[int],
+            both_noisy: bool,
+    ) -> torch.Tensor:
+        """Generate one view (slot 1) conditioned on a clean slot 0.
+
+        Args:
+            v0_latent: [1, F, C, H, W] — clean conditioning view, either the
+                ground-truth view 0 or the student's previous detached output
+            cam_emb: [2, F, 12] — relative pose of this view transition
+            z_rendered_full: [2, 17, F, h, w] geometric prior, or None
+        """
+        num_views, num_frames, num_channels, height, width = noise.shape
+        num_blocks = num_frames // self.num_frame_per_block
+        all_num_frames = [self.num_frame_per_block] * num_blocks
+
         output = torch.zeros(
-            [num_views, num_output_frames, num_channels, height, width],
-            device=noise.device, dtype=noise.dtype
-        )
+            [num_views, num_frames, num_channels, height, width],
+            device=noise.device, dtype=noise.dtype)
 
-        # Initialize single KV cache (batch_size = num_views)
+        # A pass is a fresh autoregressive rollout: caches must not carry over.
         self._initialize_kv_cache(
             batch_size=num_views, dtype=noise.dtype, device=noise.device)
         self._initialize_crossattn_cache(
             batch_size=num_views, dtype=noise.dtype, device=noise.device)
 
-        # Temporal denoising loop
-        all_num_frames = [self.num_frame_per_block] * num_blocks
-        num_denoising_steps = len(self.denoising_step_list)
-        exit_flags = self.generate_and_sync_list(
-            len(all_num_frames), num_denoising_steps, device=noise.device)
         grad_block_indices = self.generate_and_sync_grad_blocks(
-            len(all_num_frames), 3, device=noise.device)
-        both_noisy = self._sync_both_noisy(noise.device)
+            num_blocks, 3, device=noise.device)
 
-        prev_v0_denoised = None
+        # Per-pass view of the conditioning, so passes do not clobber each other.
+        pass_dict = dict(conditional_dict)
         current_start_frame = 0
-        origin_latents = conditional_dict["origin_latents"]
-        camera_embeddings = conditional_dict["cam_emb"]
-        z_rendered_full = conditional_dict.get("z_rendered")
+
         for block_index, current_num_frames in enumerate(all_num_frames):
             frame_start = current_start_frame
             frame_end = current_start_frame + current_num_frames
 
-            # View 1 noise for this block
-            noisy_view1 = noise[1:2, frame_start:frame_end]  # [1, F_block, C, H, W]
+            noisy_view1 = noise[1:2, frame_start:frame_end]
+            gt_view0 = v0_latent[:, frame_start:frame_end]
+            v0_input = noise[0:1, frame_start:frame_end] if both_noisy else gt_view0
 
-            # GT view 0 for this block (will be injected as clean)
-            gt_view0 = origin_latents[0:1, frame_start:frame_end]  # [1, F_block, C, H, W]
-            if both_noisy:
-                v0_input = noise[0:1, frame_start:frame_end]
-            else:
-                v0_input = gt_view0
-            conditional_dict["cam_emb"] = camera_embeddings[:, frame_start:frame_end]
+            pass_dict["cam_emb"] = cam_emb[:, frame_start:frame_end]
             if z_rendered_full is not None:
-                if both_noisy:
-                    conditional_dict["z_rendered"] = None
-                else:
-                    conditional_dict["z_rendered"] = z_rendered_full[:, :,frame_start:frame_end]
-            # Denoising loop for this temporal block
+                pass_dict["z_rendered"] = None if both_noisy else \
+                    z_rendered_full[:, :, frame_start:frame_end]
+
             for index, current_timestep in enumerate(self.denoising_step_list):
                 if self.same_step_across_blocks:
                     exit_flag = (index == exit_flags[0])
                 else:
                     exit_flag = (index == exit_flags[block_index])
 
-                # Shared timestep for both views
                 timestep = torch.ones(
                     [num_views, current_num_frames],
                     device=noise.device, dtype=torch.int64
                 ) * current_timestep
 
-                # Stack [GT_view0, noisy_view1] as batch=2
-                # But first: noise GT_view0 at same timestep, then overwrite with clean
-                # This way the model sees clean slot 0 with timestep t (matches SynCamMaster training)
-                # noisy_input = torch.cat([gt_view0, noisy_view1], dim=0)  # [2, F_block, C, H, W]
+                # Slot 0 stays clean while carrying timestep t, matching how the
+                # bidirectional teacher was trained.
                 noisy_input = torch.cat([v0_input, noisy_view1], dim=0)
                 if not exit_flag:
                     with torch.no_grad():
                         _, denoised_pred = self.generator(
                             noisy_image_or_video=noisy_input,
-                            conditional_dict=conditional_dict,
+                            conditional_dict=pass_dict,
                             timestep=timestep,
                             kv_cache=self.kv_cache,
                             crossattn_cache=self.crossattn_cache,
                             current_start=current_start_frame * self.frame_seq_length,
                         )
-                        # Only keep view 1 output
                         view1_denoised = denoised_pred[1:2]
                         next_timestep = self.denoising_step_list[index + 1]
                         noisy_view1 = self.scheduler.add_noise(
@@ -190,12 +256,12 @@ class SelfForcingTrainingPipelineMVBidir:
                                     [current_num_frames], device=noise.device, dtype=torch.long)
                             ).unflatten(0, view0_denoised.shape[:2])
                 else:
-                    # Gradient block
+                    # Gradients flow only through a few randomly chosen blocks.
                     if block_index not in grad_block_indices:
                         with torch.no_grad():
                             _, denoised_pred = self.generator(
                                 noisy_image_or_video=noisy_input,
-                                conditional_dict=conditional_dict,
+                                conditional_dict=pass_dict,
                                 timestep=timestep,
                                 kv_cache=self.kv_cache,
                                 crossattn_cache=self.crossattn_cache,
@@ -204,41 +270,37 @@ class SelfForcingTrainingPipelineMVBidir:
                     else:
                         _, denoised_pred = self.generator(
                             noisy_image_or_video=noisy_input,
-                            conditional_dict=conditional_dict,
+                            conditional_dict=pass_dict,
                             timestep=timestep,
                             kv_cache=self.kv_cache,
                             crossattn_cache=self.crossattn_cache,
                             current_start=current_start_frame * self.frame_seq_length,
                         )
+                    view1_denoised = denoised_pred[1:2]
                     if both_noisy:
-                        view1_denoised = denoised_pred[1:2]
                         view0_denoised = denoised_pred[0:1]
-                    else:
-                        view1_denoised = denoised_pred[1:2]
                     break
 
-            # Record outputs
             if both_noisy:
-                output[0, frame_start:frame_end] = view0_denoised[0]  # GT view 0 passthrough
+                output[0, frame_start:frame_end] = view0_denoised[0]
             else:
                 output[0, frame_start:frame_end] = gt_view0[0]
-            output[1, frame_start:frame_end] = view1_denoised[0]  # Student view 1
+            output[1, frame_start:frame_end] = view1_denoised[0]
 
-            # Re-run with context noise to update KV cache for BOTH slots
-            context_timestep_val = self.context_noise
+            # Re-run with context noise to update the KV cache for both slots.
             context_timestep = torch.ones(
                 [num_views, current_num_frames],
                 device=noise.device, dtype=torch.int64
-            ) * context_timestep_val
+            ) * self.context_noise
             if both_noisy:
                 cache_input = torch.cat([view0_denoised, view1_denoised], dim=0)
             else:
-                cache_input = torch.cat([gt_view0, view1_denoised], dim=0)  # [2, F_block, C, H, W]
+                cache_input = torch.cat([gt_view0, view1_denoised], dim=0)
 
             with torch.no_grad():
                 self.generator(
                     noisy_image_or_video=cache_input,
-                    conditional_dict=conditional_dict,
+                    conditional_dict=pass_dict,
                     timestep=context_timestep,
                     kv_cache=self.kv_cache,
                     crossattn_cache=self.crossattn_cache,
@@ -247,22 +309,19 @@ class SelfForcingTrainingPipelineMVBidir:
 
             current_start_frame += current_num_frames
 
-        # Return timestep info
+        return output
+
+    def _timestep_range(self, exit_flags):
         if not self.same_step_across_blocks:
-            denoised_timestep_from, denoised_timestep_to = None, None
-        elif exit_flags[0] == len(self.denoising_step_list) - 1:
+            return None, None
+        if exit_flags[0] == len(self.denoising_step_list) - 1:
             denoised_timestep_to = 0
-            denoised_timestep_from = 1000 - torch.argmin(
-                (self.scheduler.timesteps.cuda() - self.denoising_step_list[exit_flags[0]]).abs(), dim=0).item()
         else:
             denoised_timestep_to = 1000 - torch.argmin(
                 (self.scheduler.timesteps.cuda() - self.denoising_step_list[exit_flags[0] + 1]).abs(), dim=0).item()
-            denoised_timestep_from = 1000 - torch.argmin(
-                (self.scheduler.timesteps.cuda() - self.denoising_step_list[exit_flags[0]]).abs(), dim=0).item()
-
-        if return_sim_step:
-            return output, denoised_timestep_from, denoised_timestep_to, exit_flags[0] + 1, both_noisy
-        return output, denoised_timestep_from, denoised_timestep_to, both_noisy
+        denoised_timestep_from = 1000 - torch.argmin(
+            (self.scheduler.timesteps.cuda() - self.denoising_step_list[exit_flags[0]]).abs(), dim=0).item()
+        return denoised_timestep_from, denoised_timestep_to
 
     def _initialize_kv_cache(self, batch_size, dtype, device):
         """Single KV cache with batch_size = num_views."""

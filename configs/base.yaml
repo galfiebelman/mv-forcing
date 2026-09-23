@@ -7,6 +7,7 @@ independent_first_frame: false
 num_training_frames: 21
 num_frame_per_block: 3          # K: temporal block size in latent frames
 num_views: 2
+num_generated_views: 1        # view-sequential unrolling depth
 context_noise: 0
 warp_denoising_step: false
 same_step_across_blocks: true

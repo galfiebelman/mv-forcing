@@ -269,7 +269,6 @@ class Trainer:
         origin_latents = rearrange(origin_latents, 'b v ... -> (b v) ...').permute(0,2,1,3,4)
         source_latents = origin_latents[0:1].clone()
         z_rendered_data = batch.get("z_rendered", None)
-        teacher_z_rendered = None
         z_rendered= None
         if z_rendered_data is not None:
             z_rendered_clean = torch.zeros_like(z_rendered_data)  # v_{k-2}: zeros
@@ -311,7 +310,6 @@ class Trainer:
                 unconditional_dict=unconditional_dict,
                 clean_latent=clean_latent,
                 source_latents=source_latents,
-                teacher_z_rendered=teacher_z_rendered,
                 initial_latent=image_latent if self.config.i2v else None
             )
             torch.cuda.empty_cache()
@@ -338,7 +336,6 @@ class Trainer:
             unconditional_dict=unconditional_dict,
             clean_latent=clean_latent,
             source_latents=source_latents,
-            teacher_z_rendered=teacher_z_rendered,
             initial_latent=image_latent if self.config.i2v else None
         )
         torch.cuda.empty_cache()
