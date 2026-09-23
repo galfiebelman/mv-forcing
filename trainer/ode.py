@@ -39,7 +39,9 @@ class Trainer:
         self.dtype = torch.bfloat16 if config.mixed_precision else torch.float32
         self.device = torch.cuda.current_device()
         self.is_main_process = global_rank == 0
-        self.disable_wandb = False
+        # No wandb key means no wandb: logging in with an empty key raises.
+        self.disable_wandb = (getattr(config, "disable_wandb", False)
+                              or not getattr(config, "wandb_key", ""))
         date = str(datetime.now()).replace(" ", "-").replace(":", "-")
         self.output_path = config.logdir
         self.output_path = os.path.join(
@@ -112,6 +114,11 @@ class Trainer:
         # Step 3: Initialize the dataloader
         dataset = ODEMVRegressionLMDBDataset(
             config.data_path, max_pair=getattr(config, "max_pair", int(1e8)), cutt3r_method=getattr(config, "cutt3r_method", None))
+        # drop_last with fewer samples than ranks yields an empty loader, which
+        # makes the training loop spin forever instead of failing.
+        assert len(dataset) >= self.world_size, (
+            f"dataset has {len(dataset)} samples but there are {self.world_size} ranks; "
+            f"run at most {len(dataset)} processes or add more data")
         sampler = torch.utils.data.distributed.DistributedSampler(
             dataset, shuffle=True, drop_last=True)
         dataloader = torch.utils.data.DataLoader(
@@ -217,8 +224,8 @@ class Trainer:
             self.max_grad_norm)
         self.generator_optimizer.step()
 
-        # Step 4: Visualization
-        if VISUALIZE and self.is_main_process:
+        # Step 4: Visualization (wandb-only, so skip it when wandb is off)
+        if VISUALIZE and self.is_main_process and not self.disable_wandb:
             # Visualize the input, output, and ground truth
             input = log_dict["input"]
             output = log_dict["output"]
@@ -239,13 +246,15 @@ class Trainer:
             }, step=self.step)
 
         # Step 5: Logging
-        if self.is_main_process and not self.disable_wandb:
-            wandb_loss_dict = {
+        if self.is_main_process:
+            loss_dict = {
                 "generator_loss": generator_loss.item(),
                 "generator_grad_norm": generator_grad_norm.item(),
-                # **stats
             }
-            wandb.log(wandb_loss_dict, step=self.step)
+            print(f"step {self.step}: " + " ".join(
+                f"{k}={v:.4f}" for k, v in loss_dict.items()), flush=True)
+            if not self.disable_wandb:
+                wandb.log(loss_dict, step=self.step)
 
         if self.step % self.config.gc_interval == 0:
             if dist.get_rank() == 0:

@@ -187,7 +187,10 @@ class SelfForcingModelMV(BaseMVModel):
 
         # During training, the number of generated frames should be uniformly sampled from
         # [21, self.num_training_frames], but still being a multiple of self.num_frame_per_block
-        min_num_frames = 20 if self.args.independent_first_frame else 21
+        # 21 latent frames is the training window; allow shorter runs (e.g. a
+        # single temporal block) when num_training_frames is smaller.
+        window = min(21, self.num_training_frames)
+        min_num_frames = window - 1 if self.args.independent_first_frame else window
         max_num_frames = self.num_training_frames - 1 if self.args.independent_first_frame else self.num_training_frames
         assert max_num_frames % self.num_frame_per_block == 0
         assert min_num_frames % self.num_frame_per_block == 0
@@ -274,7 +277,9 @@ class SelfForcingModelMV(BaseMVModel):
                 self.args.cut3r_path, self.device,
                 root=getattr(self.args, "cut3r_root", None))
 
-        self.vae.to(self.device)
+        # The trainers park the VAE on CPU in fp32; bring it in at the working
+        # dtype so it matches the latents, and release it afterwards.
+        self.vae.to(device=self.device, dtype=self.dtype)
         try:
             pixels = self.vae.decode_to_pixel(prev_latent)
             pixels = (pixels * 0.5 + 0.5).clamp(0, 1)[0]      # [T_pix, 3, H, W]
@@ -301,7 +306,7 @@ class SelfForcingModelMV(BaseMVModel):
                 rendered, masks, self.vae, H_out, W_out, self.device)
             self.vae.model.clear_cache()
         finally:
-            self.vae.cpu()
+            self.vae.to(device="cpu")
             torch.cuda.empty_cache()
 
         z_rendered = torch.cat([torch.zeros_like(z_rendered), z_rendered], dim=0)

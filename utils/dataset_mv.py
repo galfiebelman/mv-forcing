@@ -243,8 +243,12 @@ class TensorDataset(torch.utils.data.Dataset):
                     next_candidates = [b for a, b in availble_list
                                        if a == view2_idx and b != view1_idx]
                     if not next_candidates:
-                        raise ValueError(
-                            f"no valid third view after cam{view2_idx:02d} in {base_path}")
+                        # Retrying cannot help: the pair list itself has no
+                        # continuation from this view.
+                        raise SystemExit(
+                            f"{base_path}: no pair starts at cam{view2_idx:02d}, so "
+                            "view-sequential unrolling has no third view. The pair "
+                            "list must form chains when num_generated_views > 1.")
                     view3_idx = int(random.choice(next_candidates))
                     view3_c2ws = load_c2ws(view3_idx)
                     data['camera_next'] = relative_embedding(view2_c2ws, view3_c2ws)

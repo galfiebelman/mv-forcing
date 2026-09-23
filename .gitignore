@@ -7,8 +7,10 @@ checkpoints/
 *.safetensors
 
 # Base models and external repos expected alongside this one
-wan_models/
-CUT3R/
+wan_models
+CUT3R
+SynCamMaster
+data
 
 # Data
 *.lmdb/

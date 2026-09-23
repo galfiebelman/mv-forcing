@@ -36,7 +36,9 @@ class Trainer:
         self.device = torch.cuda.current_device()
         self.is_main_process = global_rank == 0
         self.causal = config.causal
-        self.disable_wandb = False#:config.disable_wandb
+        # No wandb key means no wandb: logging in with an empty key raises.
+        self.disable_wandb = (getattr(config, "disable_wandb", False)
+                              or not getattr(config, "wandb_key", ""))
         self.output_path = config.logdir
         date = str(datetime.now()).replace(" ", "-").replace(":", "-")
         self.output_path = os.path.join(
@@ -165,6 +167,11 @@ class Trainer:
                 config.data_path,
                 cutt3r_method=getattr(config, "cutt3r_method", None),
                 num_generated_views=getattr(config, "num_generated_views", 1))
+        # drop_last with fewer samples than ranks yields an empty loader, which
+        # makes the training loop spin forever instead of failing.
+        assert len(dataset) >= self.world_size, (
+            f"dataset has {len(dataset)} samples but there are {self.world_size} ranks; "
+            f"run at most {len(dataset)} processes or add more data")
         sampler = torch.utils.data.distributed.DistributedSampler(
             dataset, shuffle=True, drop_last=True)
         dataloader = torch.utils.data.DataLoader(
@@ -449,6 +456,8 @@ class Trainer:
                     }
                 )
 
+                print(f"step {self.step}: " + " ".join(
+                    f"{k}={v:.4f}" for k, v in wandb_loss_dict.items()), flush=True)
                 if not self.disable_wandb:
                     wandb.log(wandb_loss_dict, step=self.step)
 

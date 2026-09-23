@@ -22,6 +22,9 @@ regex
 tqdm
 wandb
 sentencepiece
+huggingface_hub[cli]
 
-# Optional: flash-attention 2 (a scaled-dot-product fallback is used if absent)
-# pip install flash-attn --no-build-isolation
+# flash-attention 2 is required (wan/modules/model.py calls it directly).
+# A prebuilt wheel matching torch 2.5 / cu121 / py3.10 avoids a long compile:
+#   pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/flash_attn-2.7.4.post1+cu12torch2.5cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+# otherwise: pip install flash-attn --no-build-isolation
