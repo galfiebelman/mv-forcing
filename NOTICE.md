@@ -24,7 +24,6 @@ MV-Forcing. Modified files additionally carry a notice in their header.
 
 ```
 train.py
-setup.py
 model/__init__.py
 model/base.py
 model/ode_regression.py
@@ -36,6 +35,7 @@ utils/scheduler.py
 utils/wan_wrapper.py
 wan/__init__.py
 wan/modules/model.py
+wan/utils/__init__.py
 ```
 
 **Inherited unchanged:**
@@ -53,7 +53,6 @@ wan/modules/causal_model.py
 wan/modules/t5.py
 wan/modules/tokenizers.py
 wan/modules/vae.py
-wan/utils/__init__.py
 wan/utils/fm_solvers_unipc.py
 ```
 

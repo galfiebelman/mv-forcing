@@ -2,7 +2,8 @@
 # Then install torch from the CUDA 12.1 index and the remaining pip deps:
 #   pip install torch==2.5.0 torchvision==0.20.0 --index-url https://download.pytorch.org/whl/cu121
 #   pip install -r requirements.txt
-#   pip install -e .
+# Run every entry point from the repository root: configs and the default asset
+# paths are resolved relative to it.
 name: mv-forcing
 channels:
   - conda-forge
