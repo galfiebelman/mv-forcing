@@ -1,0 +1,66 @@
+# Stage 2 — DMD distillation with spatio-temporal self-forcing on SynCamVideo.
+# The frozen bidirectional SynCamMaster teacher is the data score; a trainable
+# copy tracks the student's distribution.
+# Paper: 1,600 iterations, generator lr 2e-6, critic lr 4e-7, p = 0.3.
+
+trainer: score_distillation_mv
+distribution_loss: dmd_mv
+
+# Checkpoints
+generator_ckpt: outputs/train_ode_synthetic/checkpoint_model_003000/model.pt
+teacher_ckpt: checkpoints/syncammaster_step20000.ckpt
+
+# Data: SynCamVideo training split
+data_path: data/SynCamVideo-Dataset/train
+
+# Sampling schedule (4 steps)
+denoising_step_list:
+- 1000
+- 750
+- 500
+- 250
+warp_denoising_step: true
+
+# Optimization
+lr: 2.0e-06
+lr_critic: 4.0e-07
+beta1: 0.0
+beta2: 0.999
+beta1_critic: 0.0
+beta2_critic: 0.999
+batch_size: 1
+dfake_gen_update_ratio: 2
+ema_weight: 0.99
+ema_start_step: 200
+gradient_checkpointing: true
+mv_only: true
+p_both_noisy: 0.3
+load_raw_video: false
+log_iters: 100
+logdir: ./outputs/train_dmd_synthetic
+
+# FSDP
+sharding_strategy: full
+generator_fsdp_wrap_strategy: size
+real_score_fsdp_wrap_strategy: size
+fake_score_fsdp_wrap_strategy: size
+text_encoder_fsdp_wrap_strategy: size
+
+image_or_video_shape:
+- 2
+- 21
+- 16
+- 60
+- 104
+
+model_kwargs:
+  timestep_shift: 5.0
+
+# Logging
+wandb_host: https://api.wandb.ai
+wandb_key: ""
+wandb_entity: ""
+wandb_project: mv-forcing
+wandb_name: train_dmd_synthetic
+
+negative_prompt: '色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走'

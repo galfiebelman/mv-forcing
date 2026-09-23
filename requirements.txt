@@ -1,0 +1,27 @@
+# Install torch first from the CUDA 12.1 index:
+#   pip install torch==2.5.0 torchvision==0.20.0 --index-url https://download.pytorch.org/whl/cu121
+torch==2.5.0
+torchvision==0.20.0
+diffusers==0.31.0
+transformers==4.46.2
+tokenizers>=0.20.3
+accelerate>=1.1.1
+numpy==1.24.4
+einops==0.8.1
+omegaconf==2.3.0
+lmdb==1.7.3
+pandas
+scipy
+opencv-python>=4.9.0.80
+imageio
+imageio-ffmpeg
+av==13.1.0
+pillow
+ftfy
+regex
+tqdm
+wandb
+sentencepiece
+
+# Optional: flash-attention 2 (a scaled-dot-product fallback is used if absent)
+# pip install flash-attn --no-build-isolation

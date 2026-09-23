@@ -1,0 +1,34 @@
+# Model weights — downloaded, never committed
+weights/
+checkpoints/
+*.pt
+*.ckpt
+*.pth
+*.safetensors
+
+# Base models and external repos expected alongside this one
+wan_models/
+CUT3R/
+
+# Data
+*.lmdb/
+*_lmdb/
+*.npy
+*.npz
+
+# Outputs
+results/
+outputs/
+logs/
+wandb/
+*.mp4
+*.png
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.ipynb_checkpoints/

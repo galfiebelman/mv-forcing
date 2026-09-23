@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the following paper."
+title: "MV-Forcing: Long Multi-View Video Generation via 4D-Grounded Spatio-Temporal Self-Forcing"
+authors:
+  - family-names: Fiebelman
+    given-names: Gal
+  - family-names: Averbuch-Elor
+    given-names: Hadar
+  - family-names: Benaim
+    given-names: Sagie
+year: 2026
+identifiers:
+  - type: other
+    value: "arXiv:2607.05376"
+    description: arXiv preprint
+url: "https://galfiebelman.github.io/mv-forcing/"
+preferred-citation:
+  type: article
+  title: "MV-Forcing: Long Multi-View Video Generation via 4D-Grounded Spatio-Temporal Self-Forcing"
+  authors:
+    - family-names: Fiebelman
+      given-names: Gal
+    - family-names: Averbuch-Elor
+      given-names: Hadar
+    - family-names: Benaim
+      given-names: Sagie
+  journal: "arXiv preprint arXiv:2607.05376"
+  year: 2026
+  notes: "To appear at ECCV 2026."

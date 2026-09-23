@@ -1,0 +1,12 @@
+# conda env create -f environment.yml && conda activate mv-forcing
+# Then install torch from the CUDA 12.1 index and the remaining pip deps:
+#   pip install torch==2.5.0 torchvision==0.20.0 --index-url https://download.pytorch.org/whl/cu121
+#   pip install -r requirements.txt
+#   pip install -e .
+name: mv-forcing
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10.18
+  - pip
+  - ffmpeg
