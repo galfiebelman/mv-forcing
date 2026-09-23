@@ -76,6 +76,9 @@ class SelfForcingTrainingPipelineMVBidir:
 
     def generate_and_sync_grad_blocks(self, num_blocks, n_grad_blocks, device):
         rank = dist.get_rank() if dist.is_initialized() else 0
+        # randperm can only yield num_blocks indices, so clamp before allocating:
+        # every rank must broadcast the same shape or the collective deadlocks.
+        n_grad_blocks = min(n_grad_blocks, num_blocks)
         if rank == 0:
             grad_block_indices = torch.randperm(num_blocks, device=device)[:n_grad_blocks]
         else:
@@ -117,9 +120,13 @@ class SelfForcingTrainingPipelineMVBidir:
         num_blocks = num_frames // self.num_frame_per_block
         num_denoising_steps = len(self.denoising_step_list)
 
-        # Shared across passes so the reported timestep range is valid for all of them.
+        # Every collective is drawn here, before any pass: a broadcast inside the
+        # per-pass loop would have to interleave exactly with FSDP's own
+        # collectives, and any skew between ranks deadlocks them.
         exit_flags = self.generate_and_sync_list(
             num_blocks, num_denoising_steps, device=noise.device)
+        grad_block_indices = self.generate_and_sync_grad_blocks(
+            num_blocks, 3, device=noise.device)
         both_noisy = self._sync_both_noisy(noise.device)
 
         outputs = [self._generate_pair(
@@ -129,6 +136,7 @@ class SelfForcingTrainingPipelineMVBidir:
             z_rendered_full=conditional_dict.get("z_rendered"),
             conditional_dict=conditional_dict,
             exit_flags=exit_flags,
+            grad_block_indices=grad_block_indices,
             both_noisy=both_noisy,
         )]
 
@@ -153,6 +161,7 @@ class SelfForcingTrainingPipelineMVBidir:
                     z_rendered_full=z_rendered_next,
                     conditional_dict=conditional_dict,
                     exit_flags=exit_flags,
+                    grad_block_indices=grad_block_indices,
                     both_noisy=False,
                 ))
                 prev_latent = outputs[-1][1:2].detach()
@@ -171,6 +180,7 @@ class SelfForcingTrainingPipelineMVBidir:
             z_rendered_full: Optional[torch.Tensor],
             conditional_dict: dict,
             exit_flags: List[int],
+            grad_block_indices: set,
             both_noisy: bool,
     ) -> torch.Tensor:
         """Generate one view (slot 1) conditioned on a clean slot 0.
@@ -194,9 +204,6 @@ class SelfForcingTrainingPipelineMVBidir:
             batch_size=num_views, dtype=noise.dtype, device=noise.device)
         self._initialize_crossattn_cache(
             batch_size=num_views, dtype=noise.dtype, device=noise.device)
-
-        grad_block_indices = self.generate_and_sync_grad_blocks(
-            num_blocks, 3, device=noise.device)
 
         # Per-pass view of the conditioning, so passes do not clobber each other.
         pass_dict = dict(conditional_dict)
