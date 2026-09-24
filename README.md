@@ -61,11 +61,11 @@ hf download Wan-AI/Wan2.1-T2V-1.3B --local-dir wan_models/Wan2.1-T2V-1.3B
 
 # Self-Forcing, which generates the first view at inference
 hf download gdhe17/Self-Forcing checkpoints/self_forcing_dmd.pt --local-dir .
+
+# SynCamMaster camera rig JSON, read at inference
+git clone --depth 1 https://github.com/KwaiVGI/SynCamMaster.git
 ```
-Inference also reads a SynCamMaster camera rig JSON. Clone
-[SynCamMaster](https://github.com/KwaiVGI/SynCamMaster) beside this repository so that
-`SynCamMaster/example_test_data/cameras/camera_extrinsics.json` exists, or pass your own
-file with `--camera_json_path`.
+Pass `--camera_json_path` to use your own camera file instead.
 
 ### 6. Download the MV-Forcing weights
 ```bash
