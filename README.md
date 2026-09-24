@@ -37,11 +37,13 @@ pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.
 ```
 
 ### 4. Set up CUT3R
-MV-Forcing renders its geometric prior with [CUT3R](https://github.com/CUT3R/CUT3R).
-Clone it next to this repository (or elsewhere and set `MVF_CUT3R_ROOT`), then download
-its `cut3r_512_dpt_4_64.pth` checkpoint into `CUT3R/src/` following CUT3R's README:
+MV-Forcing renders its geometric prior with [CUT3R](https://github.com/CUT3R/CUT3R). Clone
+it next to this repository (or elsewhere and set `MVF_CUT3R_ROOT`) and download its
+`cut3r_512_dpt_4_64.pth` checkpoint into `CUT3R/src/`:
 ```bash
 git clone https://github.com/CUT3R/CUT3R.git
+pip install gdown
+cd CUT3R/src && gdown "https://drive.google.com/file/d/1Asz-ZB3FfpzZYwunhQvNPZEUA8XUNAYD/view?usp=drive_link" && cd -
 ```
 
 Compile CUT3R's CUDA RoPE kernel:
