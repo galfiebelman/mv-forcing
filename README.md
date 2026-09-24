@@ -48,7 +48,8 @@ cd CUT3R/src && gdown "https://drive.google.com/file/d/1Asz-ZB3FfpzZYwunhQvNPZEU
 
 Compile CUT3R's CUDA RoPE kernel:
 ```bash
-conda install -c nvidia cuda-nvcc=12.1 cuda-cccl
+conda install -c nvidia cuda-version=12.1 cuda-nvcc=12.1.105 \
+    cuda-cudart=12.1.105 cuda-cudart-dev=12.1.105 cuda-cccl=12.1.109
 export CUDA_HOME=$CONDA_PREFIX
 cd CUT3R/src/croco/models/curope && python setup.py build_ext --inplace && cd -
 ```
