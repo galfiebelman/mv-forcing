@@ -196,14 +196,11 @@ licenses are inventoried in [`NOTICE.md`](./NOTICE.md).
 If you find our work useful in your research, please consider citing:
 
 ```bibtex
-@misc{fiebelman2026mvforcinglongmultiview,
-    title={MV-Forcing: Long Multi-View Video Generation via 4D-Grounded Spatio-Temporal Self-Forcing},
-    author={Gal Fiebelman and Hadar Averbuch-Elor and Sagie Benaim},
-    year={2026},
-    eprint={2607.05376},
-    archivePrefix={arXiv},
-    primaryClass={cs.CV},
-    url={https://arxiv.org/abs/2607.05376},
+@article{fiebelman2026mv,
+  title={MV-Forcing: Long Multi-View Video Generation via 4D-Grounded Spatio-Temporal Self-Forcing},
+  author={Fiebelman, Gal and Averbuch-Elor, Hadar and Benaim, Sagie},
+  journal={arXiv preprint arXiv:2607.05376},
+  year={2026}
 }
 ```
 
