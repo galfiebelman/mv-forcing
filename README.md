@@ -106,9 +106,11 @@ Each run writes `merged.mp4`, a `video.mp4` and PNG frames per view, and a
 
 Three stages, each driven by one config in `configs/`. Stages 1 and 2 use the
 [SynCamVideo Dataset](https://huggingface.co/datasets/KwaiVGI/SynCamVideo-Dataset) with a
-SynCamMaster teacher at `checkpoints/syncammaster_step20000.ckpt`; stage 3 uses the MixKit
-latents LMDB from [CausVid](https://github.com/tianweiy/CausVid) with a ReCamMaster teacher
-at `checkpoints/recam_teacher.ckpt`.
+[SynCamMaster](https://github.com/KwaiVGI/SynCamMaster) teacher at
+`checkpoints/syncammaster_step20000.ckpt`; stage 3 uses the MixKit latents LMDB from
+[CausVid](https://github.com/tianweiy/CausVid) with a
+[ReCamMaster](https://github.com/KwaiVGI/ReCamMaster) teacher at
+`checkpoints/recam_teacher.ckpt`.
 
 ## Step 0: Prepare the data
 
