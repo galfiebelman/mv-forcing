@@ -170,14 +170,6 @@ weights.
 
 </br>
 
-# Configurations
-
-`configs/base.yaml` holds the shared defaults and each stage config layers on top of it.
-Checkpoint paths, `data_path` and iteration counts live there rather than on the command
-line. Leaving `wandb_key` empty disables Weights & Biases and prints losses to stdout.
-
-</br>
-
 # License
 
 The code and released weights are licensed under
