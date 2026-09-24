@@ -108,8 +108,7 @@ Three stages, each driven by one config in `configs/`. Stages 1 and 2 use the
 [SynCamVideo Dataset](https://huggingface.co/datasets/KwaiVGI/SynCamVideo-Dataset) with a
 SynCamMaster teacher at `checkpoints/syncammaster_step20000.ckpt`; stage 3 uses the MixKit
 latents LMDB from [CausVid](https://github.com/tianweiy/CausVid) with a ReCamMaster teacher
-at `checkpoints/recam_teacher.ckpt`. Teacher checkpoints are not redistributed here. The
-DMD stages need more than 40 GB per GPU.
+at `checkpoints/recam_teacher.ckpt`.
 
 ## Step 0: Prepare the data
 
@@ -150,23 +149,22 @@ python create_ode_lmdb.py \
 
 torchrun --nproc_per_node 8 train.py --config_path configs/train_ode_synthetic.yaml
 ```
-3,000 iterations. Pair generation is shardable with `--chunk_id` / `--num_chunks`.
+Pair generation is shardable with `--chunk_id` / `--num_chunks`.
 
 ## Step 2: DMD distillation on synthetic data
 
 ```bash
 torchrun --nproc_per_node 8 train.py --config_path configs/train_dmd_synthetic.yaml
 ```
-1,600 iterations. Set `generator_ckpt` to the Step 1 checkpoint. `num_generated_views: 2`
-enables view-sequential unrolling.
+Set `generator_ckpt` to the Step 1 checkpoint. `num_generated_views: 2` enables
+view-sequential unrolling.
 
 ## Step 3: Real-world finetuning
 
 ```bash
 torchrun --nproc_per_node 8 train.py --config_path configs/train_dmd_real_world.yaml
 ```
-500 iterations. Set `generator_ckpt` to the Step 2 checkpoint. This produces the released
-weights.
+Set `generator_ckpt` to the Step 2 checkpoint. This produces the released weights.
 
 </br>
 
