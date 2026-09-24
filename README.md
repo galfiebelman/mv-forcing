@@ -22,8 +22,6 @@ This is the official implementation of **MV-Forcing**.
 git clone https://github.com/galfiebelman/mv-forcing.git
 cd mv-forcing
 ```
-Run every entry point from the repository root: configs and default asset paths are
-resolved relative to it.
 
 ### 2. Create conda environment
 ```bash
@@ -34,8 +32,6 @@ pip install -r requirements.txt
 ```
 
 ### 3. Install flash-attention 2
-This is required, not optional. A prebuilt wheel matching torch 2.5 / cu121 / py3.10
-avoids a long compile:
 ```bash
 pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/flash_attn-2.7.4.post1+cu12torch2.5cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
 ```
@@ -48,9 +44,7 @@ its `cut3r_512_dpt_4_64.pth` checkpoint into `CUT3R/src/` following CUT3R's READ
 git clone https://github.com/CUT3R/CUT3R.git
 ```
 
-CUT3R's CUDA RoPE kernel **must** be compiled. CUT3R assigns its pose token a position
-of `-1`, which the pure-PyTorch fallback cannot index, so without this step the prior
-render fails with `IndexError: index out of range in self`:
+Compile CUT3R's CUDA RoPE kernel:
 ```bash
 conda install -c nvidia cuda-nvcc=12.1 cuda-cccl
 export CUDA_HOME=$CONDA_PREFIX
@@ -87,28 +81,14 @@ mv-forcing/
 
 </br>
 
-# Usage
+# Inference
 
-Inference runs on a single GPU; no `torchrun` is needed. Generate two synchronized views
-of 81 frames each:
+Generate three synchronized views of 165 frames each from a single text prompt, on one
+GPU:
 ```bash
 python inference_real_world.py \
     --checkpoint_path weights/mv_forcing_real_world.pt \
     --output_folder outputs/demo \
-    --prompt "A vintage red convertible driving along a coastal cliff road at sunset, waves breaking on rocks below" \
-    --num_views 2 \
-    --total_frames 21
-```
-`--total_frames` counts latent frames: 21 latent frames are 81 pixel frames at 480x832.
-Each run writes `merged.mp4`, a `video.mp4` and PNG frames per view, and a
-`metadata.json` recording the prompt and camera configuration.
-
-To go beyond the 21-frame temporal window, enable sliding-window attention with
-`--local_attn_size` **and** `--sink_size`. Three views of 165 frames each:
-```bash
-python inference_real_world.py \
-    --checkpoint_path weights/mv_forcing_real_world.pt \
-    --output_folder outputs/demo_long \
     --prompt "A vintage red convertible driving along a coastal cliff road at sunset, waves breaking on rocks below" \
     --num_views 3 \
     --total_frames 42 \
@@ -116,50 +96,32 @@ python inference_real_world.py \
     --local_attn_size 21 \
     --sink_size 12
 ```
-Passing `--local_attn_size` without `--sink_size` has no effect on the first view, and
-the run then fails with a size-0 tensor once generation passes 21 latent frames.
-
-Useful flags: `--cam_type {az,dis,el}` selects the camera transform applied at each view
-step, `--cam_indices` gives an explicit camera chain instead, `--accumulate_views` feeds
-every previous view into the CUT3R state rather than only the last, `--prompt_file` reads
-one prompt per line, and `--seed` fixes sampling. On a 40 GB GPU, two views of 81 frames
-take roughly 4 minutes and three views of 165 frames roughly 8 minutes.
+`--total_frames` counts latent frames: 21 latent frames are 81 pixel frames at 480x832.
+Each run writes `merged.mp4`, a `video.mp4` and PNG frames per view, and a
+`metadata.json`. Run with `--help` for the remaining options.
 
 </br>
 
 # Training
 
-Training runs in three stages: ODE initialization, DMD distillation on synthetic
-multi-view data, and finetuning on real-world video. Each stage reads one config from
-`configs/` and is launched with `torchrun`. The DMD stages hold three 1.3B models
-(generator, frozen teacher, trainable critic) plus optimizer states, and the synthetic
-stage additionally keeps CUT3R resident, so they need **more than 40 GB per GPU** at the
-paper's 21 latent frames.
-
-Both stages that use synthetic data expect the
-[SynCamVideo Dataset](https://huggingface.co/datasets/KwaiVGI/SynCamVideo-Dataset) and a
-SynCamMaster teacher checkpoint at `checkpoints/syncammaster_step20000.ckpt`, obtained by
-following [SynCamMaster](https://github.com/KwaiVGI/SynCamMaster)'s own instructions.
-Teacher checkpoints are not redistributed here.
+Three stages, each driven by one config in `configs/`. Stages 1 and 2 use the
+[SynCamVideo Dataset](https://huggingface.co/datasets/KwaiVGI/SynCamVideo-Dataset) with a
+SynCamMaster teacher at `checkpoints/syncammaster_step20000.ckpt`; stage 3 uses the MixKit
+latents LMDB from [CausVid](https://github.com/tianweiy/CausVid) with a ReCamMaster teacher
+at `checkpoints/recam_teacher.ckpt`. Teacher checkpoints are not redistributed here. The
+DMD stages need more than 40 GB per GPU.
 
 ## Step 0: Prepare the data
 
-**Synthetic.** Encode each view to latents, choose valid view pairs, and render a CUT3R
-geometric prior per pair:
+Synthetic:
 ```bash
 python precompute_synthetic.py \
     --dataset_dir data/SynCamVideo-Dataset/train/f24_aperture5 \
     --captions captions.csv
 ```
-Pairs are kept when the two cameras differ by less than `--az_diff_max` (30°) in azimuth
-and `--el_diff_max` (15°) in elevation, measured about the point the rig looks at. The
-kept pairs form closed chains over distinct views, which view-sequential unrolling
-requires. `--captions` is optional: it takes a CSV with `scene,text` columns, and any
-scene missing from it falls back to `--default_caption`.
+`--captions` is optional and takes a CSV with `scene,text` columns.
 
-**Real-world.** The real-world stage trains on MixKit clips, taken from the latents LMDB
-released with [CausVid](https://github.com/tianweiy/CausVid). Render priors for it and
-write the training LMDB:
+Real-world:
 ```bash
 python precompute_real_world.py \
     --lmdb_path data/mixkit_latents_lmdb \
@@ -174,8 +136,6 @@ python create_real_world_lmdb.py \
 
 ## Step 1: ODE initialization
 
-The student is first regressed onto trajectories produced by the bidirectional teacher.
-Generate the ODE pairs, pack them into an LMDB, then train:
 ```bash
 python generate_ode_pairs.py \
     --ds_path data/SynCamVideo-Dataset/train \
@@ -190,43 +150,31 @@ python create_ode_lmdb.py \
 
 torchrun --nproc_per_node 8 train.py --config_path configs/train_ode_synthetic.yaml
 ```
-Each pair is a full teacher sampling run and takes several minutes, so `--chunk_id` /
-`--num_chunks` let you shard generation across machines. This stage runs for 3,000
-iterations.
+3,000 iterations. Pair generation is shardable with `--chunk_id` / `--num_chunks`.
 
 ## Step 2: DMD distillation on synthetic data
 
-Distribution Matching Distillation with Spatio-Temporal Self-Forcing, for 1,600
-iterations. `num_generated_views: 2` turns on view-sequential unrolling, where the second
-view is conditioned on the student's own detached output with its geometric prior
-rendered online:
 ```bash
 torchrun --nproc_per_node 8 train.py --config_path configs/train_dmd_synthetic.yaml
 ```
-Set `generator_ckpt` in the config to the checkpoint from Step 1.
+1,600 iterations. Set `generator_ckpt` to the Step 1 checkpoint. `num_generated_views: 2`
+enables view-sequential unrolling.
 
 ## Step 3: Real-world finetuning
 
-500 iterations against a [ReCamMaster](https://github.com/KwaiVGI/ReCamMaster) teacher
-finetuned for non-overlapping viewpoint pairs, expected at
-`checkpoints/recam_teacher.ckpt`. That teacher drifts between separate
-trajectory generations, so this stage supervises a single view transition
-(`num_generated_views: 1`) and disables joint denoising (`p_both_noisy: 0.0`):
 ```bash
 torchrun --nproc_per_node 8 train.py --config_path configs/train_dmd_real_world.yaml
 ```
-Set `generator_ckpt` to the checkpoint from Step 2. This produces the released weights.
+500 iterations. Set `generator_ckpt` to the Step 2 checkpoint. This produces the released
+weights.
 
 </br>
 
 # Configurations
 
-`configs/base.yaml` holds the shared defaults; each stage config layers on top of it.
-`configs/train_ode_synthetic.yaml`, `configs/train_dmd_synthetic.yaml` and
-`configs/train_dmd_real_world.yaml` correspond to the three training steps, and
-`configs/inference_real_world.yaml` to inference. Checkpoint paths, `data_path`, and the
-iteration counts are set there rather than on the command line. Leaving `wandb_key` empty
-disables Weights & Biases, in which case losses are printed to stdout.
+`configs/base.yaml` holds the shared defaults and each stage config layers on top of it.
+Checkpoint paths, `data_path` and iteration counts live there rather than on the command
+line. Leaving `wandb_key` empty disables Weights & Biases and prints losses to stdout.
 
 </br>
 
